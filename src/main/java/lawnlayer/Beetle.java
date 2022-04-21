@@ -2,25 +2,29 @@ package lawnlayer;
 
 import processing.core.PImage;
 
-public class Worm extends Enemy {
+public class Beetle extends Enemy {
 
-    public Worm(PImage sprite) {
+    public Beetle(PImage sprite) {
 
         super(sprite);
-        name = "Worm";
+        name = "Beetle";
     }
 
-    public Worm(PImage sprite, int x, int y) {
+    public Beetle(PImage sprite, int x, int y) {
 
         super(sprite, x, y);
-        name = "Worm";
+        name = "Beetle";
     }
 
     @Override
     public void move() {
         /*
-         * If the worm collides with concrete tiles,
-         * bounces the worm off in a reflected angle.
+         * If the beetle collides with concrete tiles,
+         * bounces the beetle off in a reflected angle.
+         * 
+         * If the beetle collides with a grass tile,
+         * remove the collided grass tile and bounces
+         * the beetle of in a reflected angle.
          */
         switch (collidedAt) {
             case UP:

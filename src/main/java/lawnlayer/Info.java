@@ -12,6 +12,12 @@ public final class Info {
     public static final int SPRITESIZE = 20;
     public static final int SPEED = 2;
 
+    // Names
+    public static final String CONCRETE = "Concrete";
+    public static final String GRASS = "Grass";
+    public static final String GREENPATH = "GreenPath";
+    public static final String REDPATH = "RedPath";
+
     // Restricts instantiation by other classes
     private Info() {
     }

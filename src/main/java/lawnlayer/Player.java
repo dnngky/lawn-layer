@@ -1,29 +1,40 @@
 package lawnlayer;
 
+import org.checkerframework.checker.units.qual.A;
+
 import processing.core.PImage;
 
-public class Player extends GameObject {
+public class Player extends Entity {
 
-    private int speed; // pixels per frame
+    private Direction direction;
 
-    private boolean up;
-    private boolean down;
-    private boolean left;
-    private boolean right;
+    private Tile overlappedTile;
     private boolean movingTowardsTile;
     private boolean onSoil;
+    private boolean adjustingMovement;
 
     public Player(PImage sprite, int x, int y) {
 
         super(sprite, x, y);
-        speed = Info.SPEED;
+        name = "Player";
 
-        up = false;
-        down = false;
-        left = false;
-        right = false;
+        direction = Direction.NONE;
+
+        overlappedTile = null;
         movingTowardsTile = false;
         onSoil = false;
+        adjustingMovement = false;
+    }
+
+    public void checkForOverlapWith(TileList tiles) {
+
+        for (Tile tile : tiles.toArray()) {
+            
+            if (isOverlapping(tile)) {
+                overlappedTile = tile;
+                onSoil = false;
+            }
+        }
     }
 
     public boolean isOverlapping(GameObject other) {
@@ -32,53 +43,47 @@ public class Player extends GameObject {
                 other.getY() <= getMidY() && getMidY() < (other.getY() + size));
     }
 
-    public boolean isOnSoil() {
+    public boolean isOnGrass(TileList grassTiles) {
 
-        return onSoil;
+        for (Tile grass : grassTiles.toArray()) {
+
+            if (isOverlapping(grass))
+                return true;
+        }
+        return false;
     }
 
-    public void movingOnConcrete() {
+    public Direction getDirection() {
 
-        onSoil = false;
+        return direction;
     }
 
     public void pressUp() {
 
-        if (!down) {
-            up = true;
-            left = false;
-            right = false;
-        }
+        if (direction != Direction.DOWN && !adjustingMovement)
+            direction = Direction.UP;
     }
 
     public void pressDown() {
 
-        if (!up) {
-            down = true;
-            left = false;
-            right = false;
-        }
+        if (direction != Direction.UP && !adjustingMovement)
+            direction = Direction.DOWN;
     }
 
     public void pressLeft() {
 
-        if (!right) {
-            left = true;
-            up = false;
-            down = false;
-        }
+        if (direction != Direction.RIGHT && !adjustingMovement)
+            direction = Direction.LEFT;
     }
 
     public void pressRight() {
 
-        if (!left) {
-            right = true;
-            up = false;
-            down = false;
-        }
+        if (direction != Direction.LEFT && !adjustingMovement)
+            direction = Direction.RIGHT;
     }
 
-    public void move(GameObject other) {
+    @Override
+    public void move() {
         /*
          * If the ball is on soil or not being moved towards a
          * tile, continuously move the ball in the direction
@@ -87,23 +92,68 @@ public class Player extends GameObject {
          * If the ball is not on soil, automatically move the
          * ball towards the nearest tile.
          */
-        if (up)
-            moveUp(other);
-
-        if (down)
-            moveDown(other);
-
-        if (left)
-            moveLeft(other);
-
-        if (right)
-            moveRight(other);
-
-        checkMoveOffMap();
+        switch (direction) {
+            case UP:
+                moveUp(overlappedTile);
+                break;
+            case DOWN:
+                moveDown(overlappedTile);
+                break;
+            case LEFT:
+                moveLeft(overlappedTile);
+                break;
+            case RIGHT:
+                moveRight(overlappedTile);
+                break;
+            case NONE:
+                break;
+        }
+        if (onSoil)
+            adjustMovementOnSoil();
+        
+        checkOffMapMovement();
         onSoil = true;
     }
 
-    // PRIVATE METHODS
+    public Tile addPath(PImage greenPathSprite) {
+
+        if (onSoil && x % size == 0 && y % size == 0) {
+            
+            Tile newPath = new Tile(greenPathSprite, x, y, Info.GREENPATH);
+            newPath.setOrientation(direction);
+            return newPath;
+        }
+        return null;
+    }
+
+    private void adjustMovementOnSoil() {
+
+        int xDeviation = x % size;
+        int yDeviation = y % size;
+
+        if (direction == Direction.UP || direction == Direction.DOWN) {
+
+            if (xDeviation < speed)
+                x -= xDeviation;
+            else if (size - xDeviation < speed)
+                x += (size - xDeviation);
+            else if (xDeviation < (size / 2))
+                x -= speed;
+            else
+                x += speed;
+        }
+        if (direction == Direction.LEFT || direction == Direction.RIGHT) {
+            
+            if (yDeviation < speed)
+                y -= yDeviation;
+            else if (size - yDeviation < speed)
+                y += (size - yDeviation);
+            else if (yDeviation < (size / 2))
+                y -= speed;
+            else
+                y += speed;
+        }
+    }
 
     private void moveUp(GameObject other) {
 
@@ -122,7 +172,6 @@ public class Player extends GameObject {
             y += speed;
         else
             moveDownToNearestTile(other);
-
         if (!onSoil)
             movingTowardsTile = true;
     }
@@ -151,23 +200,23 @@ public class Player extends GameObject {
 
     private void stopMoving() {
 
-        up = false;
-        down = false;
-        left = false;
-        right = false;
+        direction = Direction.NONE;
         movingTowardsTile = false;
     }
 
     private void moveUpToNearestTile(GameObject tile) {
 
-        if (Math.abs(x - tile.getX()) == speed - 1)
+        int xDistFromTile = Math.abs(x - tile.getX());
+        int yDistFromTile = y - tile.getY();
+
+        if (0 < xDistFromTile && xDistFromTile < speed)
             x = tile.getX();
         else if (x < tile.getX())
             x += speed;
         else if (x > tile.getX())
             x -= speed;
-
-        if (y - tile.getY() == speed - 1)
+        
+        if (0 < yDistFromTile && yDistFromTile < speed)
             y = tile.getY();
         else
             y -= speed;
@@ -178,14 +227,17 @@ public class Player extends GameObject {
 
     private void moveDownToNearestTile(GameObject tile) {
 
-        if (Math.abs(x - tile.getX()) == speed - 1)
+        int xDistFromTile = Math.abs(x - tile.getX());
+        int yDistFromTile = tile.getY() - y;
+
+        if (0 < xDistFromTile && xDistFromTile < speed)
             x = tile.getX();
         else if (x < tile.getX())
             x += speed;
         else if (x > tile.getX())
             x -= speed;
 
-        if (tile.getY() - y == speed - 1)
+        if (0 < yDistFromTile && yDistFromTile < speed)
             y = tile.getY();
         else
             y += speed;
@@ -196,12 +248,15 @@ public class Player extends GameObject {
 
     private void moveLeftToNearestTile(GameObject tile) {
 
-        if (x - tile.getX() == speed - 1)
+        int xDistFromTile = x - tile.getX();
+        int yDistFromTile = Math.abs(y - tile.getY());
+
+        if (0 < xDistFromTile && xDistFromTile < speed)
             x = tile.getX();
         else
             x -= speed;
 
-        if (y - tile.getY() == speed - 1)
+        if (0 < yDistFromTile && yDistFromTile < speed)
             y = tile.getY();
         else if (y < tile.getY())
             y += speed;
@@ -214,12 +269,15 @@ public class Player extends GameObject {
 
     private void moveRightToNearestTile(GameObject tile) {
 
-        if (tile.getX() - x == speed - 1)
+        int xDistFromTile = tile.getX() - x;
+        int yDistFromTile = Math.abs(y - tile.getY());
+
+        if (0 < xDistFromTile && xDistFromTile < speed)
             x = tile.getX();
         else
             x += speed;
 
-        if (y - tile.getY() == speed - 1)
+        if (0 < yDistFromTile && yDistFromTile < speed)
             y = tile.getY();
         else if (y < tile.getY())
             y += speed;
@@ -229,8 +287,9 @@ public class Player extends GameObject {
         if (x == tile.getX() && y == tile.getY())
             stopMoving();
     }
-
-    private void checkMoveOffMap() {
+    
+    @Override
+    protected void checkOffMapMovement() {
 
         int maxWidth = (Info.WIDTH - Info.SPRITESIZE);
         int maxHeight = (Info.HEIGHT - Info.SPRITESIZE);
@@ -239,6 +298,7 @@ public class Player extends GameObject {
             x = 0;
         else if (x > maxWidth)
             x = maxWidth;
+        
         if (y < 0)
             y = 0;
         else if (y > maxHeight)

@@ -1,7 +1,5 @@
 package lawnlayer;
 
-import java.util.List;
-import java.util.ArrayList;
 // import org.checkerframework.checker.units.qual.A;
 import processing.core.PApplet;
 import processing.core.PImage;
@@ -14,28 +12,31 @@ public class App extends PApplet {
     public final String configPath;
 
     private PImage soil;
+    private PImage greenPathSprite;
+    // private PImage redPathSprite;
 
-    private List<Tile> concreteTiles = new ArrayList<>();
-    // private List<Tile> grassTiles = new ArrayList<>();
+    private TileList concreteTiles;
+    private TileList grassTiles;
+    private TileList pathTiles;
 
     private Player player;
-    private Worm worm;
-    // private Beetle beetle;
+    private Enemy worm;
+    private Enemy beetle;
 
     public App() {
         this.configPath = "config.json";
     }
 
-    /**
-     * Initialise the setting of the window size.
+    /*
+     * Initialises the setting of the window size.
      */
     @Override
     public void settings() {
         size(Info.WIDTH, Info.HEIGHT);
     }
 
-    /**
-     * Load all resources such as images. Initialise the elements such as the
+    /*
+     * Loads all resources such as images. Initialise the elements such as the
      * player, enemies and map elements.
      */
     @Override
@@ -44,27 +45,30 @@ public class App extends PApplet {
 
         // Load images during setup
 
-        this.soil = loadImage(this.getClass().getResource("bg3.png").getPath());
+        soil = loadImage(this.getClass().getResource("bg3.png").getPath());
+        greenPathSprite = loadImage(this.getClass().getResource("green_path.png").getPath());
 
+        PImage grassSprite = loadImage(this.getClass().getResource("grass.png").getPath());
         PImage concreteSprite = loadImage(this.getClass().getResource("concrete_tile.png").getPath());
-        // PImage grassSprite =
-        // loadImage(this.getClass().getResource("gr2.png").getPath());
-
         PImage ballSprite = loadImage(this.getClass().getResource("ball.png").getPath());
         PImage wormSprite = loadImage(this.getClass().getResource("worm.png").getPath());
-        // PImage beetleSprite =
-        // loadImage(this.getClass().getResource("beetle.png").getPath());
+        PImage beetleSprite = loadImage(this.getClass().getResource("beetle.png").getPath());
+
+        concreteTiles = new TileList(concreteSprite);
+        grassTiles = new TileList(grassSprite);
+        pathTiles = new TileList(greenPathSprite);
 
         for (int i = 0; i < (Info.WIDTH / Info.SPRITESIZE); i++) {
-            concreteTiles.add(new Tile(concreteSprite, i * Info.SPRITESIZE, 0));
-            concreteTiles.add(new Tile(concreteSprite, i * Info.SPRITESIZE, Info.HEIGHT - Info.SPRITESIZE));
+            concreteTiles.add(new Tile(concreteSprite, i * Info.SPRITESIZE, 0, Info.CONCRETE));
+            concreteTiles.add(new Tile(concreteSprite, i * Info.SPRITESIZE, Info.HEIGHT - Info.SPRITESIZE, Info.CONCRETE));
         }
         for (int i = 0; i < (Info.HEIGHT / Info.SPRITESIZE); i++) {
-            concreteTiles.add(new Tile(concreteSprite, 0, i * Info.SPRITESIZE));
-            concreteTiles.add(new Tile(concreteSprite, Info.WIDTH - Info.SPRITESIZE, i * Info.SPRITESIZE));
+            concreteTiles.add(new Tile(concreteSprite, 0, i * Info.SPRITESIZE, Info.CONCRETE));
+            concreteTiles.add(new Tile(concreteSprite, Info.WIDTH - Info.SPRITESIZE, i * Info.SPRITESIZE, Info.CONCRETE));
         }
         player = new Player(ballSprite, 0, 0);
-        worm = new Worm(wormSprite, 200, 200);
+        worm = new Worm(wormSprite);
+        beetle = new Beetle(beetleSprite);
     }
 
     /*
@@ -74,37 +78,52 @@ public class App extends PApplet {
     public void draw() {
 
         background(soil);
-        Tile overlappedTile = concreteTiles.get(0);
 
-        for (Tile tile : concreteTiles) {
+        player.checkForOverlapWith(concreteTiles);
 
-            tile.draw(this);
+        Tile newPath = player.addPath(greenPathSprite);
 
-            if (player.isOverlapping(tile)) {
-                player.movingOnConcrete();
-                overlappedTile = tile;
-            }
-            if (worm.collidesAtTopWith(tile)) {
-                worm.collidesAt(Side.TOP);
-            } else if (worm.collidesAtBottomWith(tile)) {
-                worm.collidesAt(Side.BOTTOM);
-            } else if (worm.collidesAtLeftWith(tile)) {
-                worm.collidesAt(Side.LEFT);
-            } else if (worm.collidesAtRightWith(tile)) {
-                worm.collidesAt(Side.RIGHT);
-            }
+        if (newPath != null && !player.isOnGrass(grassTiles))
+
+            pathTiles.add(newPath);
+
+        if (pathTiles.size() > 1)
+
+            pathTiles.checkMissingCorner(player);
+
+        if (pathTiles.size() > 0 &&
+            pathTiles.isEnclosedWith(concreteTiles, grassTiles))
+
+            pathTiles.fill(grassTiles);
+        
+        player.move();
+
+        for (int i = 0; i < Info.SPEED; i++) {
+
+            worm.checkForCollisionWith(concreteTiles, false);
+            beetle.checkForCollisionWith(concreteTiles, false);
+
+            worm.checkForCollisionWith(pathTiles, false);
+            beetle.checkForCollisionWith(pathTiles, false);
+
+            worm.move();
+            beetle.move();
         }
+        concreteTiles.drawTiles(this);
+        grassTiles.drawTiles(this);
+        pathTiles.drawTiles(this);
+
         player.draw(this);
         worm.draw(this);
-        player.move(overlappedTile);
-        worm.move();
-
-        // System.out.println(collidedTile.getX()+" "+collidedTile.getY());
+        beetle.draw(this);
         // System.out.println("Ball "+ball.getMidX()+" "+ball.getMidY()+" is on tile
         // "+collidedTile.getMidX()+" "+collidedTile.getMidY());
         // System.out.println("Ball is on tile: "+ball.isOn(collidedTile));
     }
 
+    /*
+     * Runs when player presses a keyboard key.
+     */
     @Override
     public void keyPressed() {
         switch (keyCode) {
