@@ -11,6 +11,7 @@ public final class Info {
     // Entities info
     public static final int SPRITESIZE = 20;
     public static final int SPEED = 2;
+    public static final int MAXQUEUESIZE = 2;
 
     // Names
     public static final String CONCRETE = "Concrete";

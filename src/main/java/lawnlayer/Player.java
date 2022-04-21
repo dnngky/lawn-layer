@@ -1,29 +1,31 @@
 package lawnlayer;
 
-import org.checkerframework.checker.units.qual.A;
+import java.util.ArrayList;
 
+// import org.checkerframework.checker.units.qual.A;
 import processing.core.PImage;
 
 public class Player extends Entity {
 
-    private Direction direction;
+    private Direction currentDirection;
+    private ArrayList<Direction> directionQueue;
 
     private Tile overlappedTile;
     private boolean movingTowardsTile;
     private boolean onSoil;
-    private boolean adjustingMovement;
 
     public Player(PImage sprite, int x, int y) {
 
         super(sprite, x, y);
         name = "Player";
 
-        direction = Direction.NONE;
+        currentDirection = Direction.NONE;
+        directionQueue = new ArrayList<>();
+        directionQueue.add(currentDirection);
 
         overlappedTile = null;
         movingTowardsTile = false;
         onSoil = false;
-        adjustingMovement = false;
     }
 
     public void checkForOverlapWith(TileList tiles) {
@@ -37,17 +39,21 @@ public class Player extends Entity {
         }
     }
 
-    public boolean isOverlapping(GameObject other) {
-
-        return (other.getX() <= getMidX() && getMidX() < (other.getX() + size) &&
-                other.getY() <= getMidY() && getMidY() < (other.getY() + size));
-    }
-
     public boolean isOnGrass(TileList grassTiles) {
 
         for (Tile grass : grassTiles.toArray()) {
 
-            if (isOverlapping(grass))
+            if (this.isOverlapping(grass))
+                return true;
+        }
+        return false;
+    }
+
+    public boolean isOnConcrete(TileList concreteTiles) {
+
+        for (Tile concrete : concreteTiles.toArray()) {
+
+            if (this.isOverlapping(concrete))
                 return true;
         }
         return false;
@@ -55,31 +61,31 @@ public class Player extends Entity {
 
     public Direction getDirection() {
 
-        return direction;
+        return currentDirection;
     }
 
     public void pressUp() {
 
-        if (direction != Direction.DOWN && !adjustingMovement)
-            direction = Direction.UP;
+        if (currentDirection != Direction.DOWN)
+            directionQueue.add(Direction.UP);
     }
 
     public void pressDown() {
 
-        if (direction != Direction.UP && !adjustingMovement)
-            direction = Direction.DOWN;
+        if (currentDirection != Direction.UP)
+            directionQueue.add(Direction.DOWN);
     }
 
     public void pressLeft() {
 
-        if (direction != Direction.RIGHT && !adjustingMovement)
-            direction = Direction.LEFT;
+        if (currentDirection != Direction.RIGHT)
+            directionQueue.add(Direction.LEFT);
     }
 
     public void pressRight() {
 
-        if (direction != Direction.LEFT && !adjustingMovement)
-            direction = Direction.RIGHT;
+        if (currentDirection != Direction.LEFT)
+            directionQueue.add(Direction.RIGHT);
     }
 
     @Override
@@ -92,7 +98,17 @@ public class Player extends Entity {
          * If the ball is not on soil, automatically move the
          * ball towards the nearest tile.
          */
-        switch (direction) {
+
+        // Limits maximum number of delayed movements
+        if (directionQueue.size() > Info.MAXQUEUESIZE)
+            directionQueue.remove(Info.MAXQUEUESIZE);
+        
+        if (this.isOnTileSpace() && !directionQueue.isEmpty()) {
+            
+            currentDirection = directionQueue.get(0);
+            directionQueue.remove(0);
+        }
+        switch (currentDirection) {
             case UP:
                 moveUp(overlappedTile);
                 break;
@@ -108,91 +124,70 @@ public class Player extends Entity {
             case NONE:
                 break;
         }
-        if (onSoil)
-            adjustMovementOnSoil();
-        
         checkOffMapMovement();
         onSoil = true;
     }
 
     public Tile addPath(PImage greenPathSprite) {
 
-        if (onSoil && x % size == 0 && y % size == 0) {
+        if (onSoil && isOnTileSpace()) {
             
             Tile newPath = new Tile(greenPathSprite, x, y, Info.GREENPATH);
-            newPath.setOrientation(direction);
+            newPath.setOrientation(currentDirection);
             return newPath;
         }
         return null;
     }
 
-    private void adjustMovementOnSoil() {
+    private boolean isOverlapping(GameObject other) {
 
-        int xDeviation = x % size;
-        int yDeviation = y % size;
-
-        if (direction == Direction.UP || direction == Direction.DOWN) {
-
-            if (xDeviation < speed)
-                x -= xDeviation;
-            else if (size - xDeviation < speed)
-                x += (size - xDeviation);
-            else if (xDeviation < (size / 2))
-                x -= speed;
-            else
-                x += speed;
-        }
-        if (direction == Direction.LEFT || direction == Direction.RIGHT) {
-            
-            if (yDeviation < speed)
-                y -= yDeviation;
-            else if (size - yDeviation < speed)
-                y += (size - yDeviation);
-            else if (yDeviation < (size / 2))
-                y -= speed;
-            else
-                y += speed;
-        }
+        return (other.getX() <= getMidX() && getMidX() < (other.getX() + size) &&
+                other.getY() <= getMidY() && getMidY() < (other.getY() + size));
     }
 
-    private void moveUp(GameObject other) {
+    private boolean isOnTileSpace() {
+
+        return (x % size == 0 && y % size == 0);
+    }
+
+    private void moveUp(Tile targetTile) {
 
         if (onSoil || !movingTowardsTile)
             y -= speed;
         else
-            moveUpToNearestTile(other);
+            moveUpToNearestTile(targetTile);
 
         if (!onSoil)
             movingTowardsTile = true;
     }
 
-    private void moveDown(GameObject other) {
+    private void moveDown(Tile targeTile) {
 
         if (onSoil || !movingTowardsTile)
             y += speed;
         else
-            moveDownToNearestTile(other);
+            moveDownToNearestTile(targeTile);
         if (!onSoil)
             movingTowardsTile = true;
     }
 
-    private void moveLeft(GameObject other) {
+    private void moveLeft(Tile targeTile) {
 
         if (onSoil || !movingTowardsTile)
             x -= speed;
         else
-            moveLeftToNearestTile(other);
+            moveLeftToNearestTile(targeTile);
 
         if (!onSoil)
             movingTowardsTile = true;
     }
 
-    private void moveRight(GameObject other) {
+    private void moveRight(Tile targeTile) {
 
         if (onSoil || !movingTowardsTile)
             x += speed;
         else
-            moveRightToNearestTile(other);
+            moveRightToNearestTile(targeTile);
 
         if (!onSoil)
             movingTowardsTile = true;
@@ -200,7 +195,7 @@ public class Player extends Entity {
 
     private void stopMoving() {
 
-        direction = Direction.NONE;
+        currentDirection = Direction.NONE;
         movingTowardsTile = false;
     }
 

@@ -84,17 +84,20 @@ public class App extends PApplet {
         Tile newPath = player.addPath(greenPathSprite);
 
         if (newPath != null && !player.isOnGrass(grassTiles))
-
             pathTiles.add(newPath);
 
         if (pathTiles.size() > 1)
+            pathTiles.addCornerTile(player);
 
-            pathTiles.checkMissingCorner(player);
-
-        if (pathTiles.size() > 0 &&
+        if (!pathTiles.isEmpty() &&
+            !pathTiles.areAllAdjacentTo(concreteTiles) &&
+            !pathTiles.areAllAdjacentTo(grassTiles) &&
             pathTiles.isEnclosedWith(concreteTiles, grassTiles))
 
             pathTiles.fill(grassTiles);
+        
+        if (player.isOnConcrete(concreteTiles))
+            pathTiles.convertToFillTiles(grassTiles);
         
         player.move();
 
@@ -116,9 +119,6 @@ public class App extends PApplet {
         player.draw(this);
         worm.draw(this);
         beetle.draw(this);
-        // System.out.println("Ball "+ball.getMidX()+" "+ball.getMidY()+" is on tile
-        // "+collidedTile.getMidX()+" "+collidedTile.getMidY());
-        // System.out.println("Ball is on tile: "+ball.isOn(collidedTile));
     }
 
     /*

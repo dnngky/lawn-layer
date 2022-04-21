@@ -59,6 +59,7 @@ public abstract class GameObject {
         app.image(sprite, x, y);
     }
 
+    @Override
     public String toString() {
         return String.format("%s@[%d,%d]", name, x, y);
     }

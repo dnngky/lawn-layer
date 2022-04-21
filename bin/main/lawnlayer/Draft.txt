@@ -1,0 +1,704 @@
+VERSION 1:
+
+    private TileList fillStripFromLeft(TileList fillTiles, int y, int start, int end, boolean fill) {
+
+        TileList strip = new TileList(fillTiles.getTileSprite());
+        int x = start;
+
+        while (x < end) {
+
+            Tile current = new Tile(fillTiles.getTileSprite(), x, y);
+            Tile next = new Tile(fillTiles.getTileSprite(), x + tileSize, y);
+            Tile above = new Tile(fillTiles.getTileSprite(), x, y - tileSize);
+            Tile aboveNext = new Tile(fillTiles.getTileSprite(), x + tileSize, y - tileSize);
+            Tile belowNext = new Tile(fillTiles.getTileSprite(), x - tileSize, y - tileSize);
+            
+            if (isInsideRegion(current, fill))
+
+                strip.add(current);
+
+            if (isEnteringThickRegion(current, next, Direction.RIGHT)) {
+                
+                int thickness = countHorizontalThickness(next, Direction.RIGHT);
+
+                if (thickness % 2 != 0)
+                    fill = !fill;
+                x += thickness * tileSize;
+            }
+            else if (isEnteringThinRegion(fillTiles, current, next,
+                                    above, aboveNext, belowNext)) {
+                
+                int thickness = countHorizontalThickness(next, Direction.RIGHT);
+                
+                if (current.getX() == tileSize)
+                    thickness--;
+                
+                fill = !fill;
+                x += (thickness - 1) * tileSize;
+            }
+            else if (isExitingRegion(fillTiles, current, next, aboveNext)) {
+
+                fill = !fill;
+            }
+            x += tileSize;
+        }
+        return strip;
+    }
+
+    private TileList fillStripFromRight(TileList fillTiles, int y, int start, int end, boolean fill) {
+
+        TileList strip = new TileList(fillTiles.getTileSprite());
+        int x = start;
+
+        while (x > end) {
+
+            Tile current = new Tile(fillTiles.getTileSprite(), x, y);
+            Tile next = new Tile(fillTiles.getTileSprite(), x - tileSize, y);
+            Tile above = new Tile(fillTiles.getTileSprite(), x, y - tileSize);
+            Tile aboveNext = new Tile(fillTiles.getTileSprite(), x - tileSize, y - tileSize);
+            Tile belowNext = new Tile(fillTiles.getTileSprite(), x - tileSize, y + tileSize);
+            
+            if (isInsideRegion(current, fill))
+
+                strip.add(current);
+
+            if (isEnteringThickRegion(current, next, Direction.LEFT)) {
+            
+                int thickness = countHorizontalThickness(next, Direction.LEFT);
+
+                if (thickness % 2 != 0)
+                    fill = !fill;
+                x -= thickness * tileSize;
+            }
+            else if (isEnteringThinRegion(fillTiles, current, next,
+                                    above, aboveNext, belowNext)) {
+
+                int thickness = countHorizontalThickness(next, Direction.LEFT);
+
+                fill = !fill;
+                x -= (thickness - 1) * tileSize;
+            }
+            else if (isExitingRegion(fillTiles, current, next, aboveNext)) {
+                fill = !fill;
+            }
+            x -= tileSize;
+        }
+        return strip;
+    }
+
+    private TileList fillStripFromTop(TileList fillTiles, int x, int start, int end, boolean fill) {
+
+        TileList strip = new TileList(fillTiles.getTileSprite());
+        int y = start;
+        
+        while (y < end) {
+
+            Tile current = new Tile(fillTiles.getTileSprite(), x, y);
+            Tile next = new Tile(fillTiles.getTileSprite(), x, y + tileSize);
+            Tile above = new Tile(fillTiles.getTileSprite(), x - tileSize, y);
+            Tile aboveNext = new Tile(fillTiles.getTileSprite(), x - tileSize, y + tileSize);
+            Tile belowNext = new Tile(fillTiles.getTileSprite(), x + tileSize, y + tileSize);
+
+            if (isInsideRegion(current, fill))
+
+                strip.add(current);
+
+            if (isEnteringThickRegion(current, next, Direction.DOWN)) {
+                
+                int thickness = countVerticalThickness(next, Direction.DOWN);
+                
+                if (thickness % 2 != 0)
+                    fill = !fill;
+                y += thickness * tileSize;
+            }
+            else if (isEnteringThinRegion(fillTiles, current, next,
+                                    above, aboveNext, belowNext)) {
+
+                fill = !fill;
+                y += tileSize;
+            }
+            else if (isExitingRegion(fillTiles, current, next, aboveNext)) {
+
+                fill = !fill;
+            }
+            y += tileSize;
+        }
+        return strip;
+    }
+
+    private TileList fillStripFromBottom(TileList fillTiles, int x, int start, int end, boolean fill) {
+
+        TileList strip = new TileList(fillTiles.getTileSprite());
+        int y = start;
+
+        while (y > end) {
+
+            Tile current = new Tile(fillTiles.getTileSprite(), x, y);
+            Tile next = new Tile(fillTiles.getTileSprite(), x, y - tileSize);
+            Tile above = new Tile(fillTiles.getTileSprite(), x - tileSize, y);
+            Tile aboveNext = new Tile(fillTiles.getTileSprite(), x - tileSize, y - tileSize);
+            Tile belowNext = new Tile(fillTiles.getTileSprite(), x + tileSize, y - tileSize);
+
+            if (isInsideRegion(current, fill))
+
+                strip.add(current);
+
+            if (isEnteringThickRegion(current, next, Direction.UP)) {
+                
+                int thickness = countVerticalThickness(next, Direction.UP);
+                
+                if (thickness % 2 != 0)
+                    fill = !fill;
+                y -= thickness * tileSize;
+            }
+            else if (isEnteringThinRegion(fillTiles, current, next,
+                                    above, aboveNext, belowNext)) {
+
+                fill = !fill;
+                y -= tileSize;
+            }
+            else if (isExitingRegion(fillTiles, current, next, aboveNext)) {
+
+                fill = !fill;
+            }
+            y -= tileSize;
+        }
+        return strip;
+    }
+
+    private int countHorizontalThickness(Tile tile, Direction d) {
+
+        int thickness = 0;
+        int x = tile.getX();
+        int y = tile.getY();
+        
+        while (true) {
+
+            Tile current = new Tile(getTileSprite(), x, y);
+            Tile above = new Tile(getTileSprite(), x, y - tileSize);
+            Tile below = new Tile(getTileSprite(), x, y + tileSize);
+            
+            if (this.contains(current) &&
+                (this.contains(above) ||
+                this.contains(below))) {
+                thickness += 1;
+            } else
+                break;
+            
+            if (d == Direction.RIGHT)
+                x += tileSize;
+            else
+                x -= tileSize;
+        }
+        return thickness;
+    }
+
+    private int countVerticalThickness(Tile tile, Direction d) {
+
+        int thickness = 0;
+        int x = tile.getX();
+        int y = tile.getY();
+        
+        while (true) {
+
+            Tile positionTile = new Tile(getTileSprite(), x, y);
+            
+            if (this.contains(positionTile))
+                thickness += 1;
+            else
+                break;
+            
+            if (d == Direction.DOWN)
+                y += tileSize;
+            else
+                y -= tileSize;
+        }
+        return thickness;
+    }
+
+    private boolean isInsideRegion(Tile current, boolean fill) {
+
+        return (!this.contains(current) && fill);
+    }
+
+    private boolean isEnteringThickRegion(Tile current, Tile next,
+                                    Direction d) {
+
+        Tile nextTile = this.getTile(next);
+
+        if (d == Direction.LEFT || d == Direction.RIGHT)
+
+            return (!this.contains(current) &&
+                    this.contains(next) &&
+                    (nextTile.getOrientation() == Direction.UP ||
+                    nextTile.getOrientation() == Direction.DOWN));
+        
+        if (d == Direction.UP || d == Direction.DOWN)
+
+            return (!this.contains(current) &&
+                    this.contains(next) &&
+                    (nextTile.getOrientation() == Direction.LEFT ||
+                    nextTile.getOrientation() == Direction.RIGHT));
+
+        return false;
+    }
+
+    private boolean isEnteringThinRegion(TileList fillTiles, Tile current, Tile next,
+                                    Tile above, Tile aboveNext, Tile belowNext) {
+
+        return (!this.contains(current) &&
+                this.contains(next) &&
+                !fillTiles.contains(above) &&
+                (!this.contains(aboveNext) ||
+                this.contains(belowNext)));
+    }
+
+    private boolean isExitingRegion(TileList fillTiles, Tile current,
+                                    Tile next, Tile aboveNext) {
+
+        return (this.contains(current) &&
+                !this.contains(next) &&
+                !fillTiles.contains(aboveNext));
+    }
+
+VERSION 2:
+
+    private void fillHorizontally(TileList fillTiles, int start, int end) {
+
+        boolean inEnclosedRegion = false;
+        boolean inHorizontalRegion = false;
+        
+        Tile firstTile = tiles.get(0);
+        Tile lastTile = tiles.get(tiles.size() - 1);
+
+        int yMean = Math.abs(firstTile.getY() - lastTile.getY()) / 2;
+        int right = Info.WIDTH - 2 * tileSize;
+
+        if ((firstTile.getX() == tileSize && lastTile.getX() == right ||
+            firstTile.getX() == right && lastTile.getX() == tileSize) &&
+            firstTile.getY() + yMean < Info.HEIGHT / 2) {
+            
+            inEnclosedRegion = true;
+            inHorizontalRegion = true;
+        }
+        for (int y = tileSize; y < Info.HEIGHT - tileSize; y += tileSize) {
+
+            boolean fill = inEnclosedRegion;
+
+            if ((y == firstTile.getY() || y == lastTile.getY()) &&
+                !inEnclosedRegion && !inHorizontalRegion) {
+                
+                inEnclosedRegion = !inEnclosedRegion;
+                fill = inEnclosedRegion;
+            }
+            else if ((y == firstTile.getY() || y == lastTile.getY()) &&
+                inEnclosedRegion) {
+                
+                inEnclosedRegion = !inEnclosedRegion;
+            }
+            TileList strip = fillHorizontalStrip(fillTiles, y, start, end, fill);
+            fillTiles.addAll(strip.toArray());
+        }
+    }
+
+    private void fillVertically(TileList fillTiles, int start, int end) {
+
+        boolean inEnclosedRegion = false;
+        boolean inVerticalRegion = false;
+
+        Tile firstTile = tiles.get(0);
+        Tile lastTile = tiles.get(tiles.size() - 1);
+
+        int xMean = Math.abs(firstTile.getX() - lastTile.getX()) / 2;
+        int top = tileSize;
+        int bottom = Info.HEIGHT - 2 * tileSize;
+
+        if ((firstTile.getY() == top && lastTile.getY() == bottom ||
+            firstTile.getY() == bottom && lastTile.getY() == top) &&
+            firstTile.getX() + xMean < Info.WIDTH / 2) {
+
+            inEnclosedRegion = true;
+            inVerticalRegion = true;
+        }
+        for (int x = tileSize; x < Info.WIDTH - tileSize; x += tileSize) {
+
+            boolean fill = inEnclosedRegion;
+
+            if ((x == firstTile.getX() || x == lastTile.getX()) &&
+                !inEnclosedRegion && !inVerticalRegion) {
+                
+                inEnclosedRegion = !inEnclosedRegion;
+                fill = inEnclosedRegion;
+            } 
+            else if ((x == firstTile.getX() || x == lastTile.getX()) &&
+                inEnclosedRegion) {
+                
+                inEnclosedRegion = !inEnclosedRegion;
+            }
+            TileList strip = fillVerticalStrip(fillTiles, x, start, end, fill);
+            fillTiles.addAll(strip.toArray());
+        }
+    }
+
+    private TileList fillHorizontalStrip(TileList fillTiles, int y, int start, int end, boolean fill) {
+
+        TileList strip = new TileList(fillTiles.getTileSprite());
+        int x = start;
+
+        boolean condition = x < end;
+        int incr = tileSize;
+        Direction d = Direction.RIGHT;
+
+        if (start > end) {
+
+            condition = x > end;
+            incr = -tileSize;
+            d = Direction.LEFT;
+        }
+        while (condition) {
+
+            Tile current = new Tile(fillTiles.getTileSprite(), x, y);
+            Tile next = new Tile(fillTiles.getTileSprite(), x + incr, y);
+            Tile aboveNext = new Tile(fillTiles.getTileSprite(), x + incr, y - tileSize);
+            Tile belowNext = new Tile(fillTiles.getTileSprite(), x + incr, y + tileSize);
+
+            if (isInsideRegion(current, fill))
+
+                strip.add(current);
+
+            if (isPassingThickBorder(current, next, aboveNext, belowNext, d)) {
+
+                int thickness = countHorizontalThickness(next, d);
+
+                if (thickness % 2 != 0)
+                    fill = !fill;
+                
+                x += thickness * incr;
+            }
+            else if (isPassingThinBorder(current, next)) {
+
+                fill = updateFill(fillTiles, next, aboveNext, d);
+            }
+            x += incr;
+            
+            if (start < end)
+                condition = x < end;
+            else
+                condition = x > end;
+        }
+        return strip;
+    }
+
+    private TileList fillVerticalStrip(TileList fillTiles, int x, int start, int end, boolean fill) {
+
+        TileList strip = new TileList(fillTiles.getTileSprite());
+        int y = start;
+
+        boolean condition = y < end;
+        int incr = tileSize;
+        Direction d = Direction.DOWN;
+        
+        if (start > end) {
+            
+            condition = y > end;
+            incr = -tileSize;
+            d = Direction.UP;
+        }
+        while (condition) {
+
+            Tile current = new Tile(fillTiles.getTileSprite(), x, y);
+            Tile next = new Tile(fillTiles.getTileSprite(), x, y + incr);
+            Tile aboveNext = new Tile(fillTiles.getTileSprite(), x - tileSize, y + incr);
+            Tile belowNext = new Tile(fillTiles.getTileSprite(), x + tileSize, y + incr);
+
+            if (isInsideRegion(current, fill))
+
+                strip.add(current);
+
+            if (isPassingThickBorder(current, next, aboveNext, belowNext, d)) {
+                
+                int thickness = countVerticalThickness(next, d);
+
+                if (thickness % 2 != 0)
+                    fill = !fill;
+                
+                y += thickness * incr;
+            }
+            else if (isPassingThinBorder(current, next)) {
+
+                fill = updateFill(fillTiles, next, aboveNext, d);
+            }
+            y += incr;
+
+            if (start < end)
+                condition = y < end;
+            else
+                condition = y > end;
+        }
+        return strip;
+    }
+
+    private int countHorizontalThickness(Tile tile, Direction d) {
+
+        int thickness = 0;
+        int x = tile.getX();
+        int y = tile.getY();
+
+        while (true) {
+
+            Tile below = new Tile(getTileSprite(), x, y + tileSize);
+            Tile current = new Tile(getTileSprite(), x, y);
+            Tile above = new Tile(getTileSprite(), x, y - tileSize);            
+
+            if (this.contains(below) &&
+                this.contains(current) &&
+                this.contains(above))
+
+                thickness += 1;
+            
+            else break;
+
+            if (d == Direction.RIGHT)
+                x += tileSize;
+            else
+                x -= tileSize;
+        }
+        return thickness;
+    }
+
+    private int countVerticalThickness(Tile tile, Direction d) {
+
+        int thickness = 0;
+        int x = tile.getX();
+        int y = tile.getY();
+
+        while (true) {
+
+            Tile below = new Tile(getTileSprite(), x + tileSize, y);
+            Tile current = new Tile(getTileSprite(), x, y);
+            Tile above = new Tile(getTileSprite(), x - tileSize, y);
+
+            if (this.contains(below) &&
+                this.contains(current) &&
+                this.contains(above))
+                
+                thickness += 1;
+
+            else break;
+
+            if (d == Direction.DOWN)
+                y += tileSize;
+            else
+                y -= tileSize;
+        }
+        return thickness;
+    }
+
+    private boolean isInsideRegion(Tile current, boolean fill) {
+
+        return (!this.contains(current) && fill);
+    }
+
+    private boolean isPassingThickBorder(Tile current, Tile next,
+            Tile aboveNext, Tile belowNext, Direction d) {
+
+        Tile nextTile = get(next);
+
+        if (d == Direction.LEFT || d == Direction.RIGHT)
+
+            return (!this.contains(current) &&
+                    this.contains(next) &&
+                    this.contains(aboveNext) &&
+                    this.contains(belowNext) &&
+                    (nextTile.getOrientation() == Direction.UP ||
+                    nextTile.getOrientation() == Direction.DOWN));
+
+        if (d == Direction.UP || d == Direction.DOWN)
+
+            return (!this.contains(current) &&
+                    this.contains(next) &&
+                    this.contains(aboveNext) &&
+                    this.contains(belowNext) &&
+                    (nextTile.getOrientation() == Direction.LEFT ||
+                    nextTile.getOrientation() == Direction.RIGHT));
+
+        return false;
+    }
+
+    private boolean isPassingThinBorder(Tile current, Tile next) {
+        
+        return (this.contains(current) && !this.contains(next));
+    }
+
+    private boolean updateFill(TileList fillTiles, Tile next, Tile aboveNext, Direction d) {
+
+        if (this.contains(aboveNext)) {
+
+            int x = next.getX();
+            int y = next.getY();
+
+            boolean condition = y < Info.HEIGHT - tileSize;;
+
+            if (d == Direction.UP || d == Direction.DOWN)
+                condition = x < Info.WIDTH - tileSize;
+
+            while (condition) {
+
+                Tile positionTile = new Tile(fillTiles.getTileSprite(), x, y);
+
+                if (this.contains(positionTile))
+                    return true;
+
+                if (d == Direction.UP || d == Direction.DOWN) {
+                    x += tileSize;
+                    condition = x < Info.WIDTH - tileSize;
+                }
+                else {
+                    y += tileSize;
+                    condition = y < Info.HEIGHT - tileSize;
+                }
+            }
+            return false;
+        }
+        else {
+
+            return (fillTiles.contains(aboveNext));
+        }
+    }
+
+    private int[][] getBounds() {
+
+        int xUpper = tiles.get(0).getX();
+        int xLower = tiles.get(0).getX();
+        int yUpper = tiles.get(0).getY();
+        int yLower = tiles.get(0).getY();
+
+        for (Tile tile : tiles) {
+
+            if (tile.getX() < xUpper)
+                xUpper = tile.getX();
+            else if (tile.getX() > xLower)
+                xLower = tile.getX();
+
+            if (tile.getY() < yUpper)
+                yUpper = tile.getY();
+            else if (tile.getY() > yLower)
+                yLower = tile.getY();
+        }
+        return new int[][] {{xUpper, xLower}, {yUpper, yLower}};
+    }
+
+    public boolean isInsideRegion(TileList borderTiles, Direction direction) {
+
+        int x = this.x;
+        int y = this.y;
+        boolean condition;
+        int incr;
+
+        switch (direction) {
+
+            case UP:
+                condition = y > 0;
+                incr = -size;
+                break;
+
+            case DOWN:
+                condition = y < (Info.HEIGHT - size);
+                incr = size;
+                break;
+
+            case LEFT:
+                condition = x > 0;
+                incr = -size;
+                break;
+
+            case RIGHT:
+                condition = x < (Info.WIDTH - size);
+                incr = size;
+                break;
+
+            default:
+                condition = false;
+                incr = 0;
+                break;
+        }
+        while (condition) {
+
+            Tile positionTile = new Tile(sprite, x, y);
+
+            if (borderTiles.contains(positionTile))
+                return true;
+
+            if (direction == Direction.UP || direction == Direction.DOWN) {
+                y += incr;
+                condition = updateCondition(y, direction);
+            }
+            else {
+                x += incr;
+                condition = updateCondition(x, direction);
+            }
+        }
+        return false;
+    }
+
+    public void checkMissingTile(TileList otherTiles) {
+
+        int missingTileX = 0;
+        int missingTileY = 0;
+
+        for (Tile tile : tiles) {
+
+            if (tile.getX() == 2*tileSize) {
+                missingTileX = tileSize;
+                missingTileY = tile.getY();
+            }
+            if (tile.getX() == Info.WIDTH - 3*tileSize) {
+                missingTileX = Info.WIDTH - 2*tileSize;
+                missingTileY = tile.getY();
+            }
+            if (tile.getY() == 2*tileSize) {
+                missingTileX = tile.getX();
+                missingTileY = tileSize;
+            }
+            if (tile.getY() == Info.HEIGHT - 3*tileSize) {
+                missingTileX = tile.getX();
+                missingTileY = Info.HEIGHT - 2*tileSize;
+            }
+        }
+        Tile missingTile = new Tile(getTileSprite(), missingTileX, missingTileY, Info.GREENPATH);
+        Tile other = otherTiles.get(otherTiles.size() - 1);
+
+        if (missingTile.isAdjacentTo(other))
+            tiles.add(0, missingTile);
+    }
+
+    
+
+    private void adjustMovementOnSoil() {
+
+        int xDeviation = x % size;
+        int yDeviation = y % size;
+
+        if (direction == Direction.UP || direction == Direction.DOWN) {
+
+            if (xDeviation < speed)
+                x -= xDeviation;
+            else if (size - xDeviation < speed)
+                x += (size - xDeviation);
+            else if (xDeviation < (size / 2))
+                x -= speed;
+            else
+                x += speed;
+        }
+        if (direction == Direction.LEFT || direction == Direction.RIGHT) {
+            
+            if (yDeviation < speed)
+                y -= yDeviation;
+            else if (size - yDeviation < speed)
+                y += (size - yDeviation);
+            else if (yDeviation < (size / 2))
+                y -= speed;
+            else
+                y += speed;
+        }
+    }

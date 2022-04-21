@@ -40,7 +40,8 @@ public class TileList {
 
     public void add(int index, Tile tile) {
 
-        tiles.add(index, tile);
+        if (!tiles.contains(tile))
+            tiles.add(index, tile);
     }
 
     public void addAll(Collection<? extends Tile> tileList) {
@@ -48,7 +49,12 @@ public class TileList {
         tiles.addAll(tileList);
     }
 
-    public Tile getTile(Tile positionTile) {
+    public Tile get(int index) {
+
+        return tiles.get(index);
+    }
+
+    public Tile get(Tile positionTile) {
 
         for (Tile tile : tiles) {
 
@@ -57,6 +63,11 @@ public class TileList {
                 return tile;
         }
         return null;
+    }
+
+    public boolean isEmpty() {
+
+        return (tiles.size() == 0);
     }
 
     public boolean remove(Tile tile) {
@@ -84,7 +95,25 @@ public class TileList {
         return tiles.toString();
     }
 
-    public void checkMissingCorner(Player player) {
+    public boolean contains(Tile targetTile) {
+
+        for (Tile tile : tiles) {
+
+            if (tile.getX() == targetTile.getX() &&
+                tile.getY() == targetTile.getY())
+                
+                return true;
+        }
+        return false;
+    }
+
+    public void drawTiles(PApplet app) {
+
+        for (Tile tile : tiles)
+            tile.draw(app);
+    }
+
+    public void addCornerTile(Player player) {
 
         Tile tile = tiles.get(tiles.size() - 1);
         Direction tileOrientation = tile.getOrientation();
@@ -109,7 +138,8 @@ public class TileList {
                 tiles.add(cornerTile);
                 cornerTile.setOrientation(tileOrientation);
             }
-        } else {
+        }
+        else {
 
             int yDeviation = Math.abs(player.getY() - tile.getY());
 
@@ -130,398 +160,210 @@ public class TileList {
         }
     }
 
-    public boolean isEnclosedWith(TileList concreteTiles, TileList grassTiles) {
+    public boolean isEnclosedWith(TileList otherTiles, TileList fillTiles) {
 
-        Tile tailPath = tiles.get(0);
-        Tile headPath = tiles.get(tiles.size() - 1);
+        Tile headTile = tiles.get(0);
+        Tile tailTile = tiles.get(tiles.size() - 1);
 
         boolean tailIsAdjacent = false;
         boolean headIsAdjacent = false;
 
-        for (Tile concrete : concreteTiles.toArray()) {
+        for (Tile tile : otherTiles.toArray()) {
 
-            if (tailPath.isAdjacentTo(concrete))
-                tailIsAdjacent = true;
-        }
-        for (Tile concrete : concreteTiles.toArray()) {
+            if (headTile.isAdjacentTo(tile))
 
-            if (headPath.isAdjacentTo(concrete))
                 headIsAdjacent = true;
         }
-        for (Tile grass : grassTiles.toArray()) {
+        for (Tile tile : fillTiles.toArray()) {
 
-            if (tailPath.isAdjacentTo(grass))
+            if (headTile.isAdjacentTo(tile))
+                
+                headIsAdjacent = true;
+        }
+        for (Tile tile : otherTiles.toArray()) {
+
+            if (tailTile.isAdjacentTo(tile))
+
                 tailIsAdjacent = true;
         }
-        for (Tile grass : grassTiles.toArray()) {
+        for (Tile tile : fillTiles.toArray()) {
 
-            if (headPath.isAdjacentTo(grass))
-                headIsAdjacent = true;
+            if (tailTile.isAdjacentTo(tile) &&
+                !headTile.equals(tailTile))
+                
+                tailIsAdjacent = true;
         }
         return (tailIsAdjacent && headIsAdjacent);
     }
 
-    public void drawTiles(PApplet app) {
+    public boolean areAllAdjacentTo(TileList otherTiles) {
 
-        for (Tile tile : tiles)
-            tile.draw(app);
+        for (Tile tile : tiles) {
+
+            if (!tile.isAdjacentTo(otherTiles))
+                return false;
+        }
+        return true;
     }
 
     public void fill(TileList fillTiles) {
 
-        Tile firstTile = tiles.get(0);
+        Tile headTile = tiles.get(0);
+        Tile tailTile = tiles.get(tiles.size() - 1);
 
-        if (tiles.size() == 1 && movingAdjacentToConcrete(firstTile)) {
+        if (headTile.isParallelTo(tailTile))
+            fillForParallelOrientiation(fillTiles, headTile, tailTile);
+        
+        if (headTile.isOppositeTo(tailTile))
+            fillForOppositeOrientiation(fillTiles, headTile, tailTile);
+        
+        if (headTile.isPerpendicularTo(tailTile))
+            fillForPerpendicularOrientiation(fillTiles, headTile, tailTile);
 
-            fillTiles.add(new Tile(fillTiles.getTileSprite(), firstTile.getX(), firstTile.getY(), Info.GRASS));
-            tiles.clear();
-        }
-        else if (tiles.size() == 1 && !movingAdjacentToConcrete(firstTile)) {
-            // Empty
-        }
-        else {
-
-            if (firstTile.getY() == tileSize)
-                fillVertically(fillTiles, tileSize, Info.HEIGHT - tileSize);
-
-            else if (firstTile.getX() == tileSize)
-                fillHorizontally(fillTiles, tileSize, Info.WIDTH - tileSize);
-
-            if (firstTile.getY() == Info.HEIGHT - 2 * tileSize)
-                fillVertically(fillTiles, Info.HEIGHT - 2 * tileSize, 0);
-
-            else if (firstTile.getX() == Info.WIDTH - 2 * tileSize)
-                fillHorizontally(fillTiles, Info.WIDTH - 2 * tileSize, 0);
-
-            for (Tile tile : tiles)
-                fillTiles.add(new Tile(fillTiles.getTileSprite(), tile.getX(), tile.getY(), Info.GRASS));
-            
-            tiles.clear();
-        }
+        convertToFillTiles(fillTiles);
     }
 
-    private boolean movingAdjacentToConcrete(Tile firstTile) {
-
-        return (((firstTile.getY() == tileSize ||
-                    firstTile.getY() == Info.HEIGHT - 2*tileSize) &&
-                (firstTile.getOrientation() == Direction.LEFT ||
-                    firstTile.getOrientation() == Direction.RIGHT)) ||
-                ((firstTile.getX() == tileSize ||
-                    firstTile.getX() == Info.WIDTH - 2*tileSize) &&
-                (firstTile.getOrientation() == Direction.UP ||
-                    firstTile.getOrientation() == Direction.DOWN)));
-    }
-
-    public boolean contains(Tile targetTile) {
+    public void convertToFillTiles(TileList fillTiles) {
 
         for (Tile tile : tiles) {
 
-            if (tile.getX() == targetTile.getX() &&
-                    tile.getY() == targetTile.getY())
-                return true;
+            Tile borderTile = new Tile(fillTiles.getTileSprite(), tile.getX(),
+                tile.getY(), Info.GRASS);
+            fillTiles.add(borderTile);
         }
-        return false;
+        tiles.clear();
     }
 
-    private void fillHorizontally(TileList fillTiles, int start, int end) {
+    private void fillForParallelOrientiation(TileList fillTiles,
+        Tile headTile, Tile tailTile) {
 
-        boolean inEnclosedRegion = false;
-        Tile firstTile = tiles.get(0);
-        Tile lastTile = tiles.get(tiles.size() - 1);
-
-        if (lastTile.getY() == tileSize)
-            
-            inEnclosedRegion = true;
-
-        int yMean = Math.abs(firstTile.getY() - lastTile.getY()) / 2;
-        int right = Info.WIDTH - 2 * tileSize;
-
-        if ((firstTile.getY() == tileSize && lastTile.getY() == right ||
-            firstTile.getY() == right && lastTile.getY() == tileSize) &&
-            firstTile.getY() + yMean < Info.HEIGHT / 2)
-            
-            inEnclosedRegion = true;
-
-        for (int y = tileSize; y < Info.HEIGHT - tileSize; y += tileSize) {
-
-            Tile first = new Tile(fillTiles.getTileSprite(), start, y);
-            boolean fill = inEnclosedRegion;
-
-            if (this.contains(first) && !inEnclosedRegion) {
-                
-                inEnclosedRegion = !inEnclosedRegion;
-                fill = inEnclosedRegion;
-            }
-            else if (this.contains(first) && inEnclosedRegion) {
-                
-                inEnclosedRegion = !inEnclosedRegion;
-            }
-            TileList strip = fillHorizontalStrip(fillTiles, y, start, end, fill);
-            fillTiles.addAll(strip.toArray());
-        }
-    }
-
-    private void fillVertically(TileList fillTiles, int start, int end) {
-
-        boolean inEnclosedRegion = false;
-        Tile firstTile = tiles.get(0);
-        Tile lastTile = tiles.get(tiles.size() - 1);
-
-        if (lastTile.getX() == tileSize)
-            
-            inEnclosedRegion = true;
-
-        int xMean = Math.abs(firstTile.getX() - lastTile.getX()) / 2;
-        int bottom = Info.HEIGHT - 2 * tileSize;
-
-        if ((firstTile.getY() == tileSize && lastTile.getY() == bottom ||
-            firstTile.getY() == bottom && lastTile.getY() == tileSize) &&
-            firstTile.getX() + xMean < Info.WIDTH / 2)
-
-            inEnclosedRegion = true;
-
-        for (int x = tileSize; x < Info.WIDTH - tileSize; x += tileSize) {
-
-            Tile first = new Tile(fillTiles.getTileSprite(), x, start);
-            boolean fill = inEnclosedRegion;
-
-            if (this.contains(first) && !inEnclosedRegion) {
-                
-                inEnclosedRegion = !inEnclosedRegion;
-                fill = inEnclosedRegion;
-            } 
-            else if (this.contains(first) && inEnclosedRegion) {
-                
-                inEnclosedRegion = !inEnclosedRegion;
-            }
-            TileList strip = fillVerticalStrip(fillTiles, x, start, end, fill);
-            fillTiles.addAll(strip.toArray());
-        }
-    }
-
-    private TileList fillHorizontalStrip(TileList fillTiles, int y, int start, int end, boolean fill) {
-
-        TileList strip = new TileList(fillTiles.getTileSprite());
-        int x = start;
-
-        boolean condition = x < end;
-        int incr = tileSize;
-        Direction d = Direction.RIGHT;
-
-        if (start > end) {
-
-            condition = x > end;
-            incr = -tileSize;
-            d = Direction.LEFT;
-        }
-        while (condition) {
-
-            Tile current = new Tile(fillTiles.getTileSprite(), x, y);
-            Tile next = new Tile(fillTiles.getTileSprite(), x + incr, y);
-            Tile aboveNext = new Tile(fillTiles.getTileSprite(), x + incr, y - tileSize);
-            Tile belowNext = new Tile(fillTiles.getTileSprite(), x + incr, y + tileSize);
-
-            if (isInsideRegion(current, fill))
-
-                strip.add(current);
-
-            if (isPassingThickBorder(current, next, aboveNext, belowNext, d)) {
-
-                int thickness = countHorizontalThickness(next, d);
-
-                if (thickness % 2 != 0)
-                    fill = !fill;
-                
-                x += thickness * incr;
-            }
-            else if (isPassingThinBorder(current, next)) {
-
-                fill = updateFill(fillTiles, next, aboveNext, d);
-            }
-            x += incr;
-            
-            if (start < end)
-                condition = x < end;
-            else
-                condition = x > end;
-        }
-        return strip;
-    }
-
-    private TileList fillVerticalStrip(TileList fillTiles, int x, int start, int end, boolean fill) {
-
-        TileList strip = new TileList(fillTiles.getTileSprite());
-        int y = start;
-
-        boolean condition = y < end;
-        int incr = tileSize;
-        Direction d = Direction.DOWN;
+        TileList firstScan = new TileList(fillTiles.getTileSprite());
+        TileList secondScan = new TileList(fillTiles.getTileSprite());
         
-        if (start > end) {
+        parallelFill(fillTiles, firstScan, headTile, tailTile);
+
+        if (headTile.isAdjacentTo(fillTiles) ||
+            tailTile.isAdjacentTo(fillTiles))
             
-            condition = y > end;
-            incr = -tileSize;
-            d = Direction.UP;
-        }
-        while (condition) {
-
-            Tile current = new Tile(fillTiles.getTileSprite(), x, y);
-            Tile next = new Tile(fillTiles.getTileSprite(), x, y + incr);
-            Tile aboveNext = new Tile(fillTiles.getTileSprite(), x - tileSize, y + incr);
-            Tile belowNext = new Tile(fillTiles.getTileSprite(), x + tileSize, y + incr);
-
-            if (isInsideRegion(current, fill))
-
-                strip.add(current);
-
-            if (isPassingThickBorder(current, next, aboveNext, belowNext, d)) {
-                
-                int thickness = countVerticalThickness(next, d);
-
-                if (thickness % 2 != 0)
-                    fill = !fill;
-                
-                y += thickness * incr;
-            }
-            else if (isPassingThinBorder(current, next)) {
-
-                fill = updateFill(fillTiles, next, aboveNext, d);
-            }
-            y += incr;
-
-            if (start < end)
-                condition = y < end;
-            else
-                condition = y > end;
-        }
-        return strip;
-    }
-
-    private int countHorizontalThickness(Tile tile, Direction d) {
-
-        int thickness = 0;
-        int x = tile.getX();
-        int y = tile.getY();
-
-        while (true) {
-
-            Tile below = new Tile(getTileSprite(), x, y + tileSize);
-            Tile current = new Tile(getTileSprite(), x, y);
-            Tile above = new Tile(getTileSprite(), x, y - tileSize);            
-
-            if (this.contains(below) &&
-                this.contains(current) &&
-                this.contains(above))
-
-                thickness += 1;
-            
-            else break;
-
-            if (d == Direction.RIGHT)
-                x += tileSize;
-            else
-                x -= tileSize;
-        }
-        return thickness;
-    }
-
-    private int countVerticalThickness(Tile tile, Direction d) {
-
-        int thickness = 0;
-        int x = tile.getX();
-        int y = tile.getY();
-
-        while (true) {
-
-            Tile below = new Tile(getTileSprite(), x + tileSize, y);
-            Tile current = new Tile(getTileSprite(), x, y);
-            Tile above = new Tile(getTileSprite(), x - tileSize, y);
-
-            if (this.contains(below) &&
-                this.contains(current) &&
-                this.contains(above))
-                
-                thickness += 1;
-
-            else break;
-
-            if (d == Direction.DOWN)
-                y += tileSize;
-            else
-                y -= tileSize;
-        }
-        return thickness;
-    }
-
-    private boolean isInsideRegion(Tile current, boolean fill) {
-
-        return (!this.contains(current) && fill);
-    }
-
-    private boolean isPassingThickBorder(Tile current, Tile next,
-            Tile aboveNext, Tile belowNext, Direction d) {
-
-        Tile nextTile = getTile(next);
-
-        if (d == Direction.LEFT || d == Direction.RIGHT)
-
-            return (!this.contains(current) &&
-                    this.contains(next) &&
-                    this.contains(aboveNext) &&
-                    this.contains(belowNext) &&
-                    (nextTile.getOrientation() == Direction.UP ||
-                    nextTile.getOrientation() == Direction.DOWN));
-
-        if (d == Direction.UP || d == Direction.DOWN)
-
-            return (!this.contains(current) &&
-                    this.contains(next) &&
-                    this.contains(aboveNext) &&
-                    this.contains(belowNext) &&
-                    (nextTile.getOrientation() == Direction.LEFT ||
-                    nextTile.getOrientation() == Direction.RIGHT));
-
-        return false;
-    }
-
-    private boolean isPassingThinBorder(Tile current, Tile next) {
+            parallelFillForAdjacentToFillTiles(fillTiles, secondScan,
+                headTile, tailTile);
         
-        return (this.contains(current) && !this.contains(next));
+        if (secondScan.size() == 0)
+            parallelFill(fillTiles, secondScan, headTile, tailTile);
+        
+        for (Tile tile : firstScan.toArray()) {
+
+            if (secondScan.contains(tile))
+                fillTiles.add(tile);
+        }
     }
 
-    private boolean updateFill(TileList fillTiles, Tile next, Tile aboveNext, Direction d) {
+    private void parallelFill(TileList fillTiles,
+        TileList firstScan, Tile headTile, Tile tailTile) {
+        
+        if (headTile.getOrientation() == Direction.UP ||
+            headTile.getOrientation() == Direction.DOWN) {
 
-        if (this.contains(aboveNext)) {
+            int xMean = Math.min(headTile.getX(), tailTile.getX()) +
+                        (Math.abs(headTile.getX() - tailTile.getX()) / 2);
+            int xMid = Info.WIDTH / 2;
 
-            int x = next.getX();
-            int y = next.getY();
+            if (xMean < xMid)
+                fillInDirection(firstScan, fillTiles, Direction.RIGHT);
+            else
+                fillInDirection(firstScan, fillTiles, Direction.LEFT);
 
-            boolean condition = y < Info.HEIGHT - tileSize;;
-
-            if (d == Direction.UP || d == Direction.DOWN)
-                condition = x < Info.WIDTH - tileSize;
-
-            while (condition) {
-
-                Tile positionTile = new Tile(fillTiles.getTileSprite(), x, y);
-
-                if (this.contains(positionTile))
-                    return true;
-
-                if (d == Direction.UP || d == Direction.DOWN) {
-                    x += tileSize;
-                    condition = x < Info.WIDTH - tileSize;
-                }
-                else {
-                    y += tileSize;
-                    condition = y < Info.HEIGHT - tileSize;
-                }
-            }
-            return false;
         }
-        else {
+        if (headTile.getOrientation() == Direction.LEFT ||
+            headTile.getOrientation() == Direction.RIGHT) {
 
-            return (fillTiles.contains(aboveNext));
+            int yMean = Math.min(headTile.getY(), tailTile.getY()) +
+                        (Math.abs(headTile.getY() - tailTile.getY()) / 2);
+            int yMid = Info.HEIGHT / 2;
+
+            if (yMean < yMid)
+                fillInDirection(firstScan, fillTiles, Direction.DOWN);
+            else
+                fillInDirection(firstScan, fillTiles, Direction.UP);
+        }
+    }
+
+    private void parallelFillForAdjacentToFillTiles(TileList fillTiles,
+        TileList secondScan, Tile headTile, Tile tailTile) {
+
+        if (headTile.getY() == tileSize ||
+            tailTile.getY() == tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.DOWN);
+        
+        if (headTile.getY() == Info.HEIGHT - 2*tileSize ||
+            tailTile.getY() == Info.HEIGHT - 2*tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.UP);
+
+        if (headTile.getX() == tileSize ||
+            tailTile.getX() == tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.RIGHT);
+        
+        if (headTile.getX() == Info.WIDTH - 2*tileSize ||
+            tailTile.getX() == Info.WIDTH - 2*tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.LEFT);
+    }
+
+    private void fillForOppositeOrientiation(TileList fillTiles,
+        Tile headTile, Tile tailTile) {
+
+        TileList firstScan = new TileList(fillTiles.getTileSprite());
+        TileList secondScan = new TileList(fillTiles.getTileSprite());
+        TileList thirdScan = new TileList(fillTiles.getTileSprite());
+
+        this.fillInDirection(firstScan, fillTiles, headTile.getOrientation());
+        this.fillInDirection(secondScan, fillTiles, headTile.getPerpendicularOrientation());
+        this.fillInDirection(thirdScan, fillTiles, tailTile.getPerpendicularOrientation());
+        
+        for (Tile tile : firstScan.toArray()) {
+
+            if (secondScan.contains(tile) && thirdScan.contains(tile))
+                fillTiles.add(tile);
+        }
+    }
+
+    private void fillForPerpendicularOrientiation(TileList fillTiles,
+        Tile headTile, Tile tailTile) {
+
+        TileList firstScan = new TileList(fillTiles.getTileSprite());
+        TileList secondScan = new TileList(fillTiles.getTileSprite());
+
+        System.out.println(headTile.getOrientation());
+        System.out.println(tailTile.getOppositeOrientation());
+
+        this.fillInDirection(firstScan, fillTiles, headTile.getOrientation());
+        this.fillInDirection(secondScan, fillTiles, tailTile.getOppositeOrientation());
+
+        for (Tile tile : firstScan.toArray()) {
+
+            if (secondScan.contains(tile))
+                fillTiles.add(tile);
+        }
+    }
+
+    private void fillInDirection(TileList scanTiles, TileList fillTiles,
+        Direction direction) {
+
+        for (int y = tileSize; y < (Info.HEIGHT - tileSize); y += tileSize) {
+
+            for (int x = tileSize; x < (Info.WIDTH - tileSize); x += tileSize) {
+
+                Tile tile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
+
+                if (this.contains(tile) || fillTiles.contains(tile))
+                    continue;
+
+                if (tile.isInsideRegion(this, fillTiles, direction))
+                    scanTiles.add(tile);
+            }
         }
     }
 
