@@ -672,8 +672,6 @@ VERSION 2:
             tiles.add(0, missingTile);
     }
 
-    
-
     private void adjustMovementOnSoil() {
 
         int xDeviation = x % size;
@@ -701,4 +699,175 @@ VERSION 2:
             else
                 y += speed;
         }
+    }
+
+    
+
+    private void fillUpwards(TileList scanTiles, TileList fillTiles) {
+
+        for (int x = tileSize; x < (Info.WIDTH - tileSize); x += tileSize) {
+
+            for (int y = (Info.HEIGHT - 2*tileSize); y > 0; y -= tileSize) {
+
+                Tile tile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
+
+                if (fillTiles.contains(tile))
+                    break;
+
+                if (!this.contains(tile) &&
+                    tile.isInsideRegion(this, fillTiles, Direction.UP))
+
+                    scanTiles.add(tile);
+
+            }
+        }
+    }
+
+    private void fillDownwards(TileList scanTiles, TileList fillTiles) {
+
+        for (int x = tileSize; x < (Info.WIDTH - tileSize); x += tileSize) {
+
+            for (int y = tileSize; y < (Info.HEIGHT - tileSize); y += tileSize) {
+
+                Tile tile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
+
+                if (fillTiles.contains(tile))
+                    break;
+
+                if (!this.contains(tile) &&
+                    tile.isInsideRegion(this, fillTiles, Direction.DOWN))
+
+                    scanTiles.add(tile);
+            }
+        }
+    }
+
+    private void fillLeftwards(TileList scanTiles, TileList fillTiles) {
+        
+        for (int y = tileSize; y < (Info.HEIGHT - tileSize); y += tileSize) {
+
+            for (int x = (Info.WIDTH - 2*tileSize); x > 0; x -= tileSize) {
+
+                Tile tile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
+
+                if (fillTiles.contains(tile))
+                    break;
+
+                if (!this.contains(tile) &&
+                    tile.isInsideRegion(this, fillTiles, Direction.LEFT))
+
+                    scanTiles.add(tile);
+            }
+        }
+    }
+
+    private void fillRightwards(TileList scanTiles, TileList fillTiles) {
+        
+        for (int y = tileSize; y < (Info.HEIGHT - tileSize); y += tileSize) {
+
+            for (int x = tileSize; x < (Info.WIDTH - tileSize); x += tileSize) {
+
+                Tile tile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
+
+                if (fillTiles.contains(tile))
+                    break;
+
+                if (!this.contains(tile) &&
+                    tile.isInsideRegion(this, fillTiles, Direction.RIGHT))
+
+                    scanTiles.add(tile);
+            }
+        }
+    }
+
+    private void fillEnclosedTileSpace(List<Enemy> enemies) {
+
+        TileList scanTiles = new TileList(this.getTileSprite());
+
+        for (int y = tileSize; y < (Info.HEIGHT - tileSize); y += tileSize) {
+
+            for (int x = tileSize; x < (Info.WIDTH - tileSize); x += tileSize) {
+
+                Tile tile = new Tile(this.getTileSprite(), x, y, Info.GRASS);
+
+                boolean isRemovedTile = false;
+                for (Enemy enemy : enemies) {
+
+                    if (!(enemy instanceof Beetle))
+                        continue;
+                    
+                    Beetle beetle = (Beetle) enemy;
+                    if (beetle.removedTileList().contains(tile))
+                        isRemovedTile = true;
+                }
+                if (isRemovedTile || this.contains(tile))
+                    continue;
+
+                int numOfSidesEnclosed = 0;
+
+                if (tile.isInsideRegion(this, Direction.UP))
+                    numOfSidesEnclosed++;
+                
+                if (tile.isInsideRegion(this, Direction.DOWN))
+                    numOfSidesEnclosed++;
+
+                if (tile.isInsideRegion(this, Direction.LEFT))
+                    numOfSidesEnclosed++;
+
+                if (tile.isInsideRegion(this, Direction.RIGHT))
+                    numOfSidesEnclosed++;
+
+                if (numOfSidesEnclosed >= 3)
+                    scanTiles.add(tile);
+            }
+        }
+        this.addAll(scanTiles.toArray());
+    }
+
+    private void parallelFillForAdjacentToFillTiles(TileList fillTiles,
+        TileList secondScan, Tile headTile, Tile tailTile) {
+
+        if (headTile.getY() == tileSize ||
+            tailTile.getY() == tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.DOWN);
+        
+        if (headTile.getY() == Info.HEIGHT - 2*tileSize ||
+            tailTile.getY() == Info.HEIGHT - 2*tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.UP);
+
+        if (headTile.getX() == tileSize ||
+            tailTile.getX() == tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.RIGHT);
+        
+        if (headTile.getX() == Info.WIDTH - 2*tileSize ||
+            tailTile.getX() == Info.WIDTH - 2*tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.LEFT);
+    }
+
+        private void parallelFillForAdjacentToFillTiles(TileList fillTiles,
+        TileList secondScan, Tile headTile, Tile tailTile) {
+
+        if (headTile.getY() == tileSize ||
+            tailTile.getY() == tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.DOWN);
+        
+        if (headTile.getY() == Info.HEIGHT - 2*tileSize ||
+            tailTile.getY() == Info.HEIGHT - 2*tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.UP);
+
+        if (headTile.getX() == tileSize ||
+            tailTile.getX() == tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.RIGHT);
+        
+        if (headTile.getX() == Info.WIDTH - 2*tileSize ||
+            tailTile.getX() == Info.WIDTH - 2*tileSize)
+
+            fillInDirection(secondScan, fillTiles, Direction.LEFT);
     }

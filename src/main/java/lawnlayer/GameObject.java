@@ -20,8 +20,8 @@ public abstract class GameObject {
          * object is instantiated.
          */
         this.sprite = sprite;
-        this.x = rand.nextInt(Info.WIDTH - Info.SPRITESIZE * 2 + 1);
-        this.y = rand.nextInt(Info.HEIGHT - Info.SPRITESIZE * 2 + 1);
+        this.x = rand.nextInt(Info.WIDTH - 2*size + 1);
+        this.y = rand.nextInt(Info.HEIGHT - 2*size + 1);
     }
 
     protected GameObject(PImage sprite, int x, int y) {
@@ -32,27 +32,43 @@ public abstract class GameObject {
     }
 
     public int getX() {
+        
         return x;
     }
 
     public int getY() {
+        
         return y;
     }
 
     public int getMidX() {
+        
         return x + (size / 2);
     }
 
     public int getMidY() {
+        
         return y + (size / 2);
     }
 
     public String getName() {
+        
         return name;
     }
 
     public PImage getSprite() {
+        
         return sprite;
+    }
+
+    public void setName(String name) {
+
+        this.name = name;
+    }
+
+    public void setSprite(PImage sprite) {
+
+        this.sprite = sprite;
     }
 
     public void draw(PApplet app) {

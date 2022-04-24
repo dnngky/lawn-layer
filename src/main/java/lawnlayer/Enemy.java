@@ -2,28 +2,100 @@ package lawnlayer;
 
 import processing.core.PImage;
 
-public abstract class Enemy extends Entity {
+public class Enemy extends Entity {
 
-    protected Movement movement;
-    protected Direction collidedAt;
+    private Movement movement;
+    private Collision collidedAt;
+    private Tile collidedTile;
+    private TileList removedTiles;
 
-    protected Enemy(PImage sprite) {
-        /*
-         * Randomises spawn location and initialise movement if
-         * information is not given when object is instantiated.
-         */
+    public Enemy(PImage sprite, String name) {
+        
         super(sprite);
+        this.name = name;
 
         movement = initialiseMovement();
-        collidedAt = Direction.NONE;
+        collidedAt = Collision.NONE;
+        collidedTile = null;
+        removedTiles = new TileList();
     }
 
-    protected Enemy(PImage sprite, int x, int y) {
+    public Enemy(PImage sprite, int x, int y, String name) {
 
         super(sprite, x, y);
+        this.name = name;
 
         movement = initialiseMovement();
-        collidedAt = Direction.NONE;
+        collidedAt = Collision.NONE;
+        removedTiles = new TileList();
+    }
+
+    public Tile getCollidedTile() {
+
+        return collidedTile;
+    }
+
+    public TileList getRemovedTiles() {
+
+        return removedTiles;
+    }
+
+    public void checkForCollisionWith(TileList otherTiles, boolean printMsg) {
+
+        for (Tile tile : otherTiles.toArray()) {
+            
+            if (collidesDiagonallyWith(tile, otherTiles) &&
+                collidedAt == Collision.NONE) {
+                
+                collidedTile = tile;
+                collidedAt = Collision.DIAGONAL;
+            }
+        }
+        for (Tile tile : otherTiles.toArray()) {
+
+            if (collidesVerticallyWith(tile) &&
+                collidedAt != Collision.DIAGONAL) {
+
+                collidedTile = tile;
+                collidedAt = Collision.VERTICAL;
+            }
+            else if (collidesHorizontallyWith(tile) &&
+                collidedAt != Collision.DIAGONAL) {
+
+                collidedTile = tile;
+                collidedAt = Collision.HORIZONTAL;
+            }
+        }
+        if (printMsg && collidedTile != null &&
+            collidedTile.getName().equals(otherTiles.getTileName()))
+
+            System.out.printf("%s collided %sLY with %s%n",
+                              this, collidedAt, collidedTile);
+        
+        if (collidedTile != null &&
+            collidedTile.getName().equals(Info.GRASS) &&
+            name.equals(Info.BEETLE)) {
+
+            collidedTile.hide();
+            removedTiles.add(collidedTile, false);
+        }
+    }
+
+    public boolean hasCollidedWith(TileList otherTiles) {
+
+        return (collidedTile != null &&
+                collidedTile.getName().equals(otherTiles.getTileName()));
+    }
+    
+    public boolean isInsideRegion(TileList fillTiles) {
+
+        for (Tile tile : fillTiles.toArray()) {
+
+            if (this.isOverlapping(tile))
+
+                return true;
+        }
+        return false;
     }
 
     private Movement initialiseMovement() {
@@ -46,113 +118,116 @@ public abstract class Enemy extends Entity {
         }
     }
 
-    public void checkForCollisionWith(TileList tiles, boolean printMsg) {
+    private boolean collidesVerticallyWith(Tile tile) {
 
-        Tile collidedTile = null;
+        return (tile.getX() <= getMidX() && getMidX() < (tile.getX() + size) &&
+                Math.abs(tile.getMidY() - getMidY()) == size &&
+                !tile.isHidden());
+    }
 
-        for (Tile tile : tiles.toArray()) {
+    private boolean collidesHorizontallyWith(Tile tile) {
 
-            if (collidesAtTopWith(tile)) {
-                collidedTile = tile;
-                collidedAt = Direction.UP;
-            }
-            else if (collidesAtBottomWith(tile)) {
-                collidedTile = tile;
-                collidedAt = Direction.DOWN;
-            }
-            else if (collidesAtLeftWith(tile)) {
-                collidedTile = tile;
-                collidedAt = Direction.LEFT;
-            }
-            else if (collidesAtRightWith(tile)) {
-                collidedTile = tile;
-                collidedAt = Direction.RIGHT;
-            }
+        return (Math.abs(tile.getMidX() - getMidX()) == size &&
+                tile.getY() <= getMidY() && getMidY() < (tile.getY() + size) &&
+                !tile.isHidden());
+    }
+
+    private boolean collidesDiagonallyWith(Tile tile, TileList otherTiles) {
+
+        TileList adjacentTiles = tile.getAdjacentTiles();
+        Tile top = adjacentTiles.get(0);
+        Tile bottom = adjacentTiles.get(1);
+        Tile left = adjacentTiles.get(2);
+        Tile right = adjacentTiles.get(3);
+
+        if (otherTiles.contains(top) && otherTiles.contains(bottom) ||
+            otherTiles.contains(left) && otherTiles.contains(right))
+            
+            return false;
+
+        boolean collidedTopLeft =
+            ((tile.getX() - size) <= x && x <= (tile.getX() - size/2) &&
+            (tile.getY() - size) <= y && y <= (tile.getY() - size/2) &&
+            !tile.isHidden());
+
+        boolean collidedBottomLeft =
+            ((tile.getX() - size) <= x && x <= (tile.getX() - size/2) &&
+            (tile.getY() + size/2) <= y && y <= (tile.getY() + size) &&
+            !tile.isHidden());
+
+        boolean collidedTopRight =
+            ((tile.getX() + size/2) <= x && x <= (tile.getX() + size) &&
+            (tile.getY() - size) <= y && y <= (tile.getY() - size/2) &&
+            !tile.isHidden());
+
+        boolean collidedBottomRight =
+            ((tile.getX() + size/2) <= x && x <= (tile.getX() + size) &&
+            (tile.getY() + size/2) <= y && y <= (tile.getY() + size) &&
+            !tile.isHidden());
+
+        return (collidedTopLeft || collidedBottomLeft ||
+                collidedTopRight || collidedBottomRight);
+    }
+
+    @Override
+    protected void move() {
+
+        switch (collidedAt) {
+            
+            case VERTICAL:
+                movement = movement.flipVertically();
+                break;
+            case HORIZONTAL:
+                movement = movement.flipHorizontally();
+                break;
+            case DIAGONAL:
+                movement = movement.flipDiagonally();
+                break;
+            default:
+                break;
         }
-        if (printMsg && collidedTile != null)
-            System.out.printf("%s (%d, %d) collided with %s (%d, %d)%n",
-                              name, x, y, collidedTile.name, collidedTile.getX(), collidedTile.getY());
-    }
+        collidedAt = Collision.NONE;
+        collidedTile = null;
 
-    protected boolean collidesAtTopWith(GameObject other) {
+        switch (movement) {
 
-        return (other.getX() <= getMidX() && getMidX() < (other.getX() + size) &&
-                getMidY() == (other.getMidY() + size));
-    }
-
-    protected boolean collidesAtBottomWith(GameObject other) {
-
-        return (other.getX() <= getMidX() && getMidX() < (other.getX() + size) &&
-                getMidY() == (other.getMidY() - size));
-    }
-
-    protected boolean collidesAtLeftWith(GameObject other) {
-
-        return (getMidX() == (other.getMidX() + size) &&
-                other.getY() <= getMidY() && getMidY() < (other.getY() + size));
-    }
-
-    protected boolean collidesAtRightWith(GameObject other) {
-
-        return (getMidX() == (other.getMidX() - size) &&
-                other.getY() <= getMidY() && getMidY() < (other.getY() + size));
-    }
-
-    protected void bouncesOffTop() {
-
-        if (movement == Movement.UPLEFT)
-            movement = Movement.DOWNLEFT;
-        else if (movement == Movement.UPRIGHT)
-            movement = Movement.DOWNRIGHT;
-
-        collidedAt = Direction.NONE;
-    }
-
-    protected void bouncesOffBottom() {
-
-        if (movement == Movement.DOWNLEFT)
-            movement = Movement.UPLEFT;
-        else if (movement == Movement.DOWNRIGHT)
-            movement = Movement.UPRIGHT;
-
-        collidedAt = Direction.NONE;
-    }
-
-    protected void bouncesOffLeft() {
-
-        if (movement == Movement.UPLEFT)
-            movement = Movement.UPRIGHT;
-        else if (movement == Movement.DOWNLEFT)
-            movement = Movement.DOWNRIGHT;
-
-        collidedAt = Direction.NONE;
-    }
-
-    protected void bouncesOffRight() {
-
-        if (movement == Movement.UPRIGHT)
-            movement = Movement.UPLEFT;
-        else if (movement == Movement.DOWNRIGHT)
-            movement = Movement.DOWNLEFT;
-
-        collidedAt = Direction.NONE;
+            case UPLEFT:
+                y--;
+                x--;
+                break;
+            case UPRIGHT:
+                y--;
+                x++;
+                break;
+            case DOWNLEFT:
+                y++;
+                x--;
+                break;
+            case DOWNRIGHT:
+                y++;
+                x++;
+                break;
+            case STATIONARY:
+                break;
+        }
+        checkOffMapMovement();
     }
 
     @Override
     protected void checkOffMapMovement() {
 
-        int maxWidth = (Info.WIDTH - size);
-        int maxHeight = (Info.HEIGHT - size);
+        int maxWidth = (Info.WIDTH - 2*size);
+        int maxHeight = (Info.HEIGHT - 2*size);
 
-        if (x < 0)
+        if (x < size)
             x = size;
         else if (x > maxWidth)
-            x = maxWidth - size;
+            x = maxWidth;
         
-        if (y < 0)
+        if (y < size)
             y = size;
         else if (y > maxHeight)
-            y = maxHeight - size;
+            y = maxHeight;
     }
 
 }

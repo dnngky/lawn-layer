@@ -3,31 +3,61 @@ package lawnlayer;
 import processing.core.PImage;
 
 public class Tile extends GameObject {
+    
+    private Direction orientation;
+    private boolean isHidden;
+    private boolean isCollided;
+    private int frameOfCollision;
 
-    Direction orientation;
-
-    protected Tile(PImage sprite) {
-
-        super(sprite);
-        orientation = Direction.NONE;
-    }
-
-    protected Tile(PImage sprite, int x, int y) {
+    public Tile(PImage sprite, int x, int y) {
 
         super(sprite, x, y);
+
         orientation = Direction.NONE;
+        isHidden = false;
+        isCollided = false;
+        frameOfCollision = 0;
     }
 
-    protected Tile(PImage sprite, int x, int y, String name) {
+    public Tile(PImage sprite, int x, int y, String name) {
 
         super(sprite, x, y);
         this.name = name;
+
         orientation = Direction.NONE;
+        isHidden = false;
+        isCollided = false;
+        frameOfCollision = 0;
+    }
+
+    public void hide() {
+
+        isHidden = true;
+    }
+
+    public void unhide() {
+
+        isHidden = false;
+    }
+
+    public boolean isCollided() {
+
+        return isCollided;
+    }
+
+    public boolean isHidden() {
+
+        return isHidden;
     }
 
     public void setOrientation(Direction orientation) {
 
         this.orientation = orientation;
+    }
+
+    public int getFrameOfCollision() {
+
+        return frameOfCollision;
     }
 
     public Direction getOrientation() {
@@ -37,49 +67,115 @@ public class Tile extends GameObject {
 
     public Direction getOppositeOrientation() {
 
-        switch (orientation) {
-
-            case UP:
-                return Direction.DOWN;
-            case DOWN:
-                return Direction.UP;
-            case LEFT:
-                return Direction.RIGHT;
-            case RIGHT:
-                return Direction.LEFT;
-            default:
-                return Direction.NONE;
-        }
+        return orientation.flip();
     }
 
     public Direction getPerpendicularOrientation() {
 
-        switch (orientation) {
+        return orientation.normal();
+    }
+
+    public Tile getAdjacentTile(Direction direction) {
+
+        Tile adjacentTile;
+
+        switch (direction) {
 
             case UP:
-                return Direction.LEFT;
+                adjacentTile = new Tile(sprite, x, y - size, name);
+                adjacentTile.setOrientation(Direction.UP);
+                break;
+            
             case DOWN:
-                return Direction.RIGHT;
+                adjacentTile = new Tile(sprite, x, y + size, name);
+                adjacentTile.setOrientation(Direction.DOWN);
+                break;
+            
             case LEFT:
-                return Direction.UP;
+                adjacentTile = new Tile(sprite, x - size, y, name);
+                adjacentTile.setOrientation(Direction.LEFT);
+                break;
+            
             case RIGHT:
-                return Direction.DOWN;
+                adjacentTile = new Tile(sprite, x + size, y, name);
+                adjacentTile.setOrientation(Direction.RIGHT);
+                break;
+
             default:
-                return Direction.NONE;
+                adjacentTile = new Tile(sprite, x, y, name);
+                break;
         }
+        return adjacentTile;
+    }
+
+    public TileList getAdjacentTiles() {
+
+        Tile top = getAdjacentTile(Direction.UP);
+        Tile bottom = getAdjacentTile(Direction.DOWN);
+        Tile left = getAdjacentTile(Direction.LEFT);
+        Tile right = getAdjacentTile(Direction.RIGHT);
+
+        return new TileList(new Tile[] {top, bottom, left, right});
+    }
+    
+    public boolean isVerticallyAdjacentTo(Tile other) {
+
+        return (Math.abs(y - other.getY()) == size && x == other.getX() &&
+                !other.isHidden());
+    }
+
+    public boolean isHorizontallyAdjacentTo(Tile other) {
+
+        return (Math.abs(x - other.getX()) == size && y == other.getY() &&
+                !other.isHidden());
+    }
+
+    public boolean isVerticallyAdjacentTo(TileList otherTiles) {
+
+        for (Tile other : otherTiles.toArray()) {
+
+            if (isVerticallyAdjacentTo(other))
+                return true;
+        }
+        return false;
+    }
+
+    public boolean isHorizontallyAdjacentTo(TileList otherTiles) {
+
+        for (Tile other : otherTiles.toArray()) {
+
+            if (isHorizontallyAdjacentTo(other))
+                return true;
+        }
+        return false;
     }
 
     public boolean isAdjacentTo(Tile other) {
 
-        return ((Math.abs(x - other.getX()) == size && y == other.getY()) ||
-                (Math.abs(y - other.getY()) == size && x == other.getX()));
+        return (isVerticallyAdjacentTo(other) ||
+                isHorizontallyAdjacentTo(other));
     }
 
     public boolean isAdjacentTo(TileList otherTiles) {
 
         for (Tile other : otherTiles.toArray()) {
 
-            if (this.isAdjacentTo(other))
+            if (isAdjacentTo(other))
+                return true;
+        }
+        return false;
+    }
+
+    public boolean isAdjacentTo(TileList otherTiles1, TileList otherTiles2) {
+
+        for (Tile other : otherTiles1.toArray()) {
+
+            if (isAdjacentTo(other))
+                return true;
+        }
+        for (Tile other : otherTiles2.toArray()) {
+
+            if (isAdjacentTo(other))
                 return true;
         }
         return false;
@@ -110,6 +206,32 @@ public class Tile extends GameObject {
                     other.getOrientation() == Direction.DOWN);
         
         return false;
+    }
+
+    public boolean isSurroundedBy(TileList otherTiles) {
+
+        Tile top = getAdjacentTile(Direction.UP);
+        Tile bottom = getAdjacentTile(Direction.DOWN);
+        Tile left = getAdjacentTile(Direction.LEFT);
+        Tile right = getAdjacentTile(Direction.RIGHT);
+
+        return (otherTiles.contains(top) &&
+                otherTiles.contains(bottom) &&
+                otherTiles.contains(left) &&
+                otherTiles.contains(right));
+    }
+
+    public boolean isFloating(TileList otherTiles) {
+
+        Tile top = getAdjacentTile(Direction.UP);
+        Tile bottom = getAdjacentTile(Direction.DOWN);
+        Tile left = getAdjacentTile(Direction.LEFT);
+        Tile right = getAdjacentTile(Direction.RIGHT);
+
+        return (!(otherTiles.contains(top) ||
+                otherTiles.contains(bottom) ||
+                otherTiles.contains(left) ||
+                otherTiles.contains(right)));
     }
 
     public boolean isInsideRegion(TileList borderTiles, TileList fillTiles,
@@ -167,6 +289,13 @@ public class Tile extends GameObject {
         return false;
     }
 
+    public void turnRed(PImage redPathSprite, int frameCount) {
+
+        sprite = redPathSprite;
+        isCollided = true;
+        frameOfCollision = frameCount;
+    }
+    
     private boolean updateCondition(int n, Direction direction) {
 
         switch (direction) {
@@ -195,8 +324,7 @@ public class Tile extends GameObject {
         Tile otherTile = (Tile) other;
 
         return (this.getX() == otherTile.getX() &&
-                this.getY() == otherTile.getY() &&
-                this.getName() == otherTile.getName());
+                this.getY() == otherTile.getY());
     }
 
 }
