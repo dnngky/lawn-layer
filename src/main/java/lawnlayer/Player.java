@@ -8,40 +8,47 @@ public class Player extends Entity {
 
     private Direction currentDirection;
     private ArrayList<Direction> directionQueue;
-
     private Tile overlappedTile;
-    private boolean stopQueue;
-    private boolean movingTowardsTile;
     private boolean onSoil;
+    private boolean movingTowardsTile;
+    private boolean stopQueue;
 
     public Player(PImage sprite) {
 
-        super(sprite, Info.SPAWNPOINT.get(0), Info.SPAWNPOINT.get(1));
-        name = Info.PLAYER;
+        super(sprite, Info.SPAWNPOINT.get(0), Info.SPAWNPOINT.get(1),
+            Info.PLAYER);
 
         currentDirection = Direction.NONE;
         directionQueue = new ArrayList<>();
         directionQueue.add(currentDirection);
-
         overlappedTile = null;
-        stopQueue = false;
-        movingTowardsTile = false;
         onSoil = false;
+        movingTowardsTile = false;
+        stopQueue = false;
     }
 
     public Player(PImage sprite, int x, int y) {
 
-        super(sprite, x, y);
-        name = Info.PLAYER;
+        super(sprite, x, y, Info.PLAYER);
 
         currentDirection = Direction.NONE;
         directionQueue = new ArrayList<>();
         directionQueue.add(currentDirection);
-
         overlappedTile = null;
-        stopQueue = false;
-        movingTowardsTile = false;
         onSoil = false;
+        movingTowardsTile = false;
+        stopQueue = false;
+    }
+
+    public Tile createPath(PImage greenPathSprite) {
+
+        if (onSoil && isOnTileSpace()) {
+            
+            Tile newPath = new Tile(greenPathSprite, x, y, Info.PATH);
+            newPath.setOrientation(currentDirection);
+            return newPath;
+        }
+        return null;
     }
 
     public Tile getOverlappedTile(TileList otherTiles) {
@@ -58,7 +65,7 @@ public class Player extends Entity {
     }
 
     public Tile getOverlappedTile(TileList otherTiles1, TileList otherTiles2,
-        TileList otherTiles3) {
+        TileList otherTiles3, TileList otherTiles4) {
 
         if (isOverlapping(otherTiles1))
             overlappedTile = getOverlappedTile(otherTiles1);
@@ -68,72 +75,14 @@ public class Player extends Entity {
         
         else if (isOverlapping(otherTiles3))
             overlappedTile = getOverlappedTile(otherTiles3);
+
+        else if (isOverlapping(otherTiles4))
+            overlappedTile = getOverlappedTile(otherTiles4);
         
         else
             overlappedTile = null;
         
         return overlappedTile;
-    }
-
-    public void pressUp() {
-
-        if (currentDirection != Direction.DOWN)
-            directionQueue.add(Direction.UP);
-    }
-
-    public void pressDown() {
-
-        if (currentDirection != Direction.UP)
-            directionQueue.add(Direction.DOWN);
-    }
-
-    public void pressLeft() {
-
-        if (currentDirection != Direction.RIGHT)
-            directionQueue.add(Direction.LEFT);
-    }
-
-    public void pressRight() {
-
-        if (currentDirection != Direction.LEFT)
-            directionQueue.add(Direction.RIGHT);
-    }
-
-    public void respawn() {
-
-        x = Info.SPAWNPOINT.get(0);
-        y = Info.SPAWNPOINT.get(1);
-
-        currentDirection = Direction.NONE;
-        directionQueue.clear();
-        directionQueue.add(currentDirection);
-
-        overlappedTile = null;
-        movingTowardsTile = false;
-        onSoil = false;
-    }
-
-    public void stop() {
-
-        onSoil = false;
-        movingTowardsTile = true;
-        stopQueue = true;
-    }
-
-    public void update(Tile overlappedTile) {
-
-        if (overlappedTile == null ||
-            (overlappedTile.name.equals(Info.GRASS) &&
-            !stopQueue)) {
-
-            onSoil = true;
-            movingTowardsTile = false;
-        }
-        else if (overlappedTile.name.equals(Info.CONCRETE)) {
-
-            onSoil = false;
-            movingTowardsTile = true;
-        }
     }
 
     @Override
@@ -175,28 +124,94 @@ public class Player extends Entity {
         checkForOffMapMovement();
     }
 
-    public Tile createPath(PImage greenPathSprite) {
+    public void pressDown() {
 
-        if (onSoil && isOnTileSpace()) {
-            
-            Tile newPath = new Tile(greenPathSprite, x, y, Info.PATH);
-            newPath.setOrientation(currentDirection);
-            return newPath;
+        if (currentDirection != Direction.UP)
+            directionQueue.add(Direction.DOWN);
+    }
+
+    public void pressLeft() {
+
+        if (currentDirection != Direction.RIGHT)
+            directionQueue.add(Direction.LEFT);
+    }
+
+    public void pressRight() {
+
+        if (currentDirection != Direction.LEFT)
+            directionQueue.add(Direction.RIGHT);
+    }
+
+    public void pressUp() {
+
+        if (currentDirection != Direction.DOWN)
+            directionQueue.add(Direction.UP);
+    }
+
+    public void respawn() {
+
+        x = Info.SPAWNPOINT.get(0);
+        y = Info.SPAWNPOINT.get(1);
+
+        currentDirection = Direction.NONE;
+        directionQueue.clear();
+        directionQueue.add(currentDirection);
+
+        overlappedTile = null;
+        movingTowardsTile = false;
+        onSoil = false;
+    }
+
+    public void stop() {
+
+        onSoil = false;
+        movingTowardsTile = true;
+        stopQueue = true;
+    }
+
+    public void update(Tile overlappedTile) {
+
+        if (overlappedTile == null ||
+            (overlappedTile.name.equals(Info.GRASS) &&
+            !stopQueue)) {
+
+            onSoil = true;
+            movingTowardsTile = false;
         }
-        return null;
+        else if (overlappedTile.name.equals(Info.CONCRETE)) {
+
+            onSoil = false;
+            movingTowardsTile = true;
+        }
+    }
+
+    @Override
+    protected void checkForOffMapMovement() {
+
+        int maxWidth = (Info.WIDTH - Info.SPRITESIZE);
+        int maxHeight = (Info.HEIGHT - Info.SPRITESIZE);
+
+        if (x < 0) {
+            x = 0;
+            currentDirection = Direction.NONE;
+        }
+        else if (x > maxWidth) {
+            x = maxWidth;
+            currentDirection = Direction.NONE;
+        }
+        if (y < Info.TOPBAR) {
+            y = Info.TOPBAR;
+            currentDirection = Direction.NONE;
+        }
+        else if (y > maxHeight) {
+            y = maxHeight;
+            currentDirection = Direction.NONE;
+        }
     }
 
     private boolean isOnTileSpace() {
 
         return (x % size == 0 && y % size == 0 && y >= Info.TOPBAR);
-    }
-
-    private void moveUp(Tile positionTile) {
-
-        if (onSoil && !movingTowardsTile)
-            y -= speed;
-        else
-            moveUpToNearestTile(positionTile);
     }
 
     private void moveDown(Tile positionTile) {
@@ -205,50 +220,6 @@ public class Player extends Entity {
             y += speed;
         else
             moveDownToNearestTile(positionTile);
-    }
-
-    private void moveLeft(Tile positionTile) {
-
-        if (onSoil && !movingTowardsTile)
-            x -= speed;
-        else
-            moveLeftToNearestTile(positionTile);
-    }
-
-    private void moveRight(Tile positionTile) {
-
-        if (onSoil && !movingTowardsTile)
-            x += speed;
-        else
-            moveRightToNearestTile(positionTile);
-    }
-
-    private void stopMoving() {
-
-        currentDirection = Direction.NONE;
-        movingTowardsTile = false;
-        stopQueue = false;
-    }
-
-    private void moveUpToNearestTile(Tile tile) {
-
-        int xDistFromTile = Math.abs(x - tile.getX());
-        int yDistFromTile = y - tile.getY();
-
-        if (0 < xDistFromTile && xDistFromTile < speed)
-            x = tile.getX();
-        else if (x < tile.getX())
-            x += speed;
-        else if (x > tile.getX())
-            x -= speed;
-        
-        if (0 < yDistFromTile && yDistFromTile < speed)
-            y = tile.getY();
-        else
-            y -= speed;
-
-        if (x == tile.getX() && y == tile.getY())
-            stopMoving();
     }
 
     private void moveDownToNearestTile(Tile tile) {
@@ -272,6 +243,14 @@ public class Player extends Entity {
             stopMoving();
     }
 
+    private void moveLeft(Tile positionTile) {
+
+        if (onSoil && !movingTowardsTile)
+            x -= speed;
+        else
+            moveLeftToNearestTile(positionTile);
+    }
+
     private void moveLeftToNearestTile(Tile tile) {
 
         int xDistFromTile = x - tile.getX();
@@ -291,6 +270,14 @@ public class Player extends Entity {
 
         if (x == tile.getX() && y == tile.getY())
             stopMoving();
+    }
+
+    private void moveRight(Tile positionTile) {
+
+        if (onSoil && !movingTowardsTile)
+            x += speed;
+        else
+            moveRightToNearestTile(positionTile);
     }
 
     private void moveRightToNearestTile(Tile tile) {
@@ -313,29 +300,41 @@ public class Player extends Entity {
         if (x == tile.getX() && y == tile.getY())
             stopMoving();
     }
-    
-    @Override
-    protected void checkForOffMapMovement() {
 
-        int maxWidth = (Info.WIDTH - Info.SPRITESIZE);
-        int maxHeight = (Info.HEIGHT - Info.SPRITESIZE);
+    private void moveUp(Tile positionTile) {
 
-        if (x < 0) {
-            x = 0;
-            currentDirection = Direction.NONE;
-        }
-        else if (x > maxWidth) {
-            x = maxWidth;
-            currentDirection = Direction.NONE;
-        }
-        if (y < Info.TOPBAR) {
-            y = Info.TOPBAR;
-            currentDirection = Direction.NONE;
-        }
-        else if (y > maxHeight) {
-            y = maxHeight;
-            currentDirection = Direction.NONE;
-        }
+        if (onSoil && !movingTowardsTile)
+            y -= speed;
+        else
+            moveUpToNearestTile(positionTile);
+    }
+
+    private void moveUpToNearestTile(Tile tile) {
+
+        int xDistFromTile = Math.abs(x - tile.getX());
+        int yDistFromTile = y - tile.getY();
+
+        if (0 < xDistFromTile && xDistFromTile < speed)
+            x = tile.getX();
+        else if (x < tile.getX())
+            x += speed;
+        else if (x > tile.getX())
+            x -= speed;
+        
+        if (0 < yDistFromTile && yDistFromTile < speed)
+            y = tile.getY();
+        else
+            y -= speed;
+
+        if (x == tile.getX() && y == tile.getY())
+            stopMoving();
+    }
+
+    private void stopMoving() {
+
+        currentDirection = Direction.NONE;
+        movingTowardsTile = false;
+        stopQueue = false;
     }
 
 }

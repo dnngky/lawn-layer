@@ -53,16 +53,16 @@ public class Test {
     public static void main(String[] args) {
         
         TileList bounds = new TileList();
-        bounds.add(new Tile(4, 0));
-        bounds.add(new Tile(50, 42));
-        bounds.add(new Tile(43, 857));
-        bounds.add(new Tile(109, 3));
-        bounds.add(new Tile(34, 65));
-        bounds.add(new Tile(0, 12));
-        bounds.add(new Tile(7, 87));
-        bounds.add(new Tile(192, 46));
-        bounds.add(new Tile(55, 93));
-        bounds.add(new Tile(5, 1));
+        // bounds.add(new Tile(4, 0));
+        // bounds.add(new Tile(50, 42));
+        // bounds.add(new Tile(43, 857));
+        // bounds.add(new Tile(109, 3));
+        // bounds.add(new Tile(34, 65));
+        // bounds.add(new Tile(0, 12));
+        // bounds.add(new Tile(7, 87));
+        // bounds.add(new Tile(192, 46));
+        // bounds.add(new Tile(55, 93));
+        // bounds.add(new Tile(5, 1));
 
         Test.ascendingSort(bounds, "Y");
         System.out.println(bounds);

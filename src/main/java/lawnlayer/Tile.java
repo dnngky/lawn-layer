@@ -4,29 +4,9 @@ import processing.core.PImage;
 
 public class Tile extends GameObject {
     
-    private Direction orientation;
-    private boolean isCollided;
     private int frameOfCollision;
-
-    public Tile(int x, int y) {
-
-        super(x, y);
-        this.name = "UnnamedTile";
-
-        orientation = Direction.NONE;
-        isCollided = false;
-        frameOfCollision = 0;
-    }
-
-    public Tile(PImage sprite, int x, int y) {
-
-        super(sprite, x, y);
-        this.name = "UnnamedTile";
-
-        orientation = Direction.NONE;
-        isCollided = false;
-        frameOfCollision = 0;
-    }
+    private boolean isCollided;
+    private Direction orientation;
 
     public Tile(PImage sprite, int x, int y, String name) {
 
@@ -37,14 +17,19 @@ public class Tile extends GameObject {
         frameOfCollision = 0;
     }
 
-    public boolean isCollided() {
+    @Override
+    public boolean equals(Object other) {
 
-        return isCollided;
-    }
+        if (this == other)
+            return true;
 
-    public void setOrientation(Direction orientation) {
+        if (!(other instanceof Tile))
+            return false;
 
-        this.orientation = orientation;
+        Tile otherTile = (Tile) other;
+
+        return (this.getX() == otherTile.getX() &&
+                this.getY() == otherTile.getY());
     }
 
     public int getFrameOfCollision() {
@@ -109,41 +94,11 @@ public class Tile extends GameObject {
 
         return new TileList(new Tile[] {top, bottom, left, right});
     }
-    
-    public boolean isVerticallyAdjacentTo(Tile other) {
-
-        return (Math.abs(y - other.getY()) == size && x == other.getX());
-    }
-
-    public boolean isHorizontallyAdjacentTo(Tile other) {
-
-        return (Math.abs(x - other.getX()) == size && y == other.getY());
-    }
-
-    public boolean isVerticallyAdjacentTo(TileList otherTiles) {
-
-        for (Tile other : otherTiles.toArray()) {
-
-            if (isVerticallyAdjacentTo(other))
-                return true;
-        }
-        return false;
-    }
-
-    public boolean isHorizontallyAdjacentTo(TileList otherTiles) {
-
-        for (Tile other : otherTiles.toArray()) {
-
-            if (isHorizontallyAdjacentTo(other))
-                return true;
-        }
-        return false;
-    }
 
     public boolean isAdjacentTo(Tile other) {
 
-        return (isVerticallyAdjacentTo(other) ||
-                isHorizontallyAdjacentTo(other));
+        return (isAdjacentHorizontallyTo(other) ||
+                isAdjacentVerticallyTo(other));
     }
 
     public boolean isAdjacentTo(TileList otherTiles) {
@@ -158,60 +113,45 @@ public class Tile extends GameObject {
 
     public boolean isAdjacentTo(TileList otherTiles1, TileList otherTiles2) {
 
-        for (Tile other : otherTiles1.toArray()) {
+        return (isAdjacentTo(otherTiles1) || isAdjacentTo(otherTiles2));
+    }
 
-            if (isAdjacentTo(other))
-                return true;
-        }
-        for (Tile other : otherTiles2.toArray()) {
+    public boolean isAdjacentHorizontallyTo(Tile other) {
 
-            if (isAdjacentTo(other))
+        return (Math.abs(x - other.getX()) == size && y == other.getY());
+    }
+
+    public boolean isAdjacentHorizontallyTo(TileList otherTiles) {
+
+        for (Tile other : otherTiles.toArray()) {
+
+            if (isAdjacentHorizontallyTo(other))
                 return true;
         }
         return false;
-    }
-
-    public boolean isOppositeTo(Tile other) {
-
-        return (orientation == other.getOppositeOrientation());
-    }
-
-    public boolean isParallelTo(Tile other) {
-
-        return (orientation == other.getOrientation());
     }
     
-    public boolean isNormalTo(Tile other) {
+    public boolean isAdjacentVerticallyTo(Tile other) {
 
-        if (orientation == Direction.UP ||
-            orientation == Direction.DOWN)
+        return (Math.abs(y - other.getY()) == size && x == other.getX());
+    }
 
-            return (other.getOrientation() == Direction.LEFT ||
-                    other.getOrientation() == Direction.RIGHT);
+    public boolean isAdjacentVerticallyTo(TileList otherTiles) {
 
-        if (orientation == Direction.LEFT ||
-            orientation == Direction.RIGHT)
+        for (Tile other : otherTiles.toArray()) {
 
-            return (other.getOrientation() == Direction.UP ||
-                    other.getOrientation() == Direction.DOWN);
-        
+            if (isAdjacentVerticallyTo(other))
+                return true;
+        }
         return false;
     }
 
-    public boolean isSurroundedBy(TileList otherTiles) {
+    public boolean isCollided() {
 
-        Tile top = getAdjacentTile(Direction.UP);
-        Tile bottom = getAdjacentTile(Direction.DOWN);
-        Tile left = getAdjacentTile(Direction.LEFT);
-        Tile right = getAdjacentTile(Direction.RIGHT);
-
-        return (otherTiles.contains(top) &&
-                otherTiles.contains(bottom) &&
-                otherTiles.contains(left) &&
-                otherTiles.contains(right));
+        return isCollided;
     }
 
-    public boolean isFloating(TileList otherTiles) {
+    public boolean isFloatingAround(TileList otherTiles) {
 
         Tile top = getAdjacentTile(Direction.UP);
         Tile bottom = getAdjacentTile(Direction.DOWN);
@@ -261,7 +201,7 @@ public class Tile extends GameObject {
         }
         while (condition) {
 
-            Tile positionTile = new Tile(sprite, x, y);
+            Tile positionTile = new Tile(sprite, x, y, name);
 
             if (borderTiles.contains(positionTile) ||
                 fillTiles.contains(positionTile))
@@ -279,10 +219,55 @@ public class Tile extends GameObject {
         return false;
     }
 
+    public boolean isOppositeTo(Tile other) {
+
+        return (orientation == other.getOppositeOrientation());
+    }
+
     public boolean isOutOfBounds() {
 
         return (x < 0 || x > (Info.WIDTH - size) ||
                 y < Info.TOPBAR || y > (Info.HEIGHT - size));
+    }
+    
+    public boolean isNormalTo(Tile other) {
+
+        if (orientation == Direction.UP ||
+            orientation == Direction.DOWN)
+
+            return (other.getOrientation() == Direction.LEFT ||
+                    other.getOrientation() == Direction.RIGHT);
+
+        if (orientation == Direction.LEFT ||
+            orientation == Direction.RIGHT)
+
+            return (other.getOrientation() == Direction.UP ||
+                    other.getOrientation() == Direction.DOWN);
+        
+        return false;
+    }
+
+    public boolean isParallelTo(Tile other) {
+
+        return (orientation == other.getOrientation());
+    }
+
+    public boolean isSurroundedBy(TileList otherTiles) {
+
+        Tile top = getAdjacentTile(Direction.UP);
+        Tile bottom = getAdjacentTile(Direction.DOWN);
+        Tile left = getAdjacentTile(Direction.LEFT);
+        Tile right = getAdjacentTile(Direction.RIGHT);
+
+        return (otherTiles.contains(top) &&
+                otherTiles.contains(bottom) &&
+                otherTiles.contains(left) &&
+                otherTiles.contains(right));
+    }
+
+    public void setOrientation(Direction orientation) {
+
+        this.orientation = orientation;
     }
 
     public void turnRed(PImage redPathSprite, int frameCount) {
@@ -307,20 +292,6 @@ public class Tile extends GameObject {
             default:
                 return false;
         }
-    }
-
-    public boolean equals(Object other) {
-
-        if (this == other)
-            return true;
-
-        if (!(other instanceof Tile))
-            return false;
-
-        Tile otherTile = (Tile) other;
-
-        return (this.getX() == otherTile.getX() &&
-                this.getY() == otherTile.getY());
     }
 
 }

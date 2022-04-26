@@ -4,29 +4,27 @@ import processing.core.PImage;
 
 public abstract class Entity extends GameObject {
 
-    protected int speed = Info.SPEED; // pixels per frame
+    protected int speed;
 
     protected Entity(PImage sprite, String name) {
-        
+
         super(sprite, name);
-    }
-
-    protected Entity(PImage sprite, int x, int y) {
-
-        super(sprite, x, y);
+        speed = Info.SPEED;
     }
 
     protected Entity(PImage sprite, int x, int y, String name) {
 
         super(sprite, x, y, name);
+        speed = Info.SPEED;
     }
 
     protected Entity(PImage sprite, String location, String name) {
 
         super(sprite, location, name);
+        speed = Info.SPEED;
     }
     
-    protected boolean isOverlapping(GameObject other) {
+    public boolean isOverlapping(GameObject other) {
 
         return (other.getX() <= getMidX() && getMidX() < (other.getX() + size) &&
                 other.getY() <= getMidY() && getMidY() < (other.getY() + size));
@@ -42,8 +40,8 @@ public abstract class Entity extends GameObject {
         return false;
     }
 
-    protected abstract void move();
-
     protected abstract void checkForOffMapMovement();
+    
+    protected abstract void move();
     
 }

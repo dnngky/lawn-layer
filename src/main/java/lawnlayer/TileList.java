@@ -9,42 +9,38 @@ import processing.core.PImage;
 public class TileList {
 
     private List<Tile> tiles;
-    private boolean isOverriding;
-    
-    private PImage tileSprite;
     private String tileName;
-    private static int tileSize = Info.SPRITESIZE;
+    private int tileSize;
+    private PImage tileSprite;
 
     public TileList() {
 
         tiles = new ArrayList<>();
+        
+        tileName = "UnnamedTileList";
+        tileSize = Info.SPRITESIZE;
         tileSprite = null;
-        isOverriding = false;
     }
     
     public TileList(PImage tileSprite, String tileName) {
 
         tiles = new ArrayList<>();
-        this.tileSprite = tileSprite;
+        
         this.tileName = tileName;
-        isOverriding = false;
+        tileSize = Info.SPRITESIZE;
+        this.tileSprite = tileSprite;
     }
 
     public TileList(Tile[] tiles) {
 
         this.tiles = new ArrayList<>();
+
         for (Tile tile : tiles)
             this.tiles.add(tile);
-    }
 
-    public PImage getTileSprite() {
-
-        return tileSprite;
-    }
-
-    public String getTileName() {
-
-        return tileName;
+        tileName = "UnnamedTileList";
+        tileSize = Info.SPRITESIZE;
+        tileSprite = null;
     }
 
     public void add(Tile tile) {
@@ -70,6 +66,51 @@ public class TileList {
         tiles.clear();
     }
 
+    public boolean contains(Tile positionTile) {
+
+        return tiles.contains(positionTile);
+    }
+
+    public void convertToFillTiles(TileList otherTiles) {
+
+        for (Tile tile : otherTiles.toArray()) {
+
+            Tile borderTile = new Tile(tileSprite, tile.getX(),
+                tile.getY(), tileName);
+            borderTile.setOrientation(tile.getOrientation());
+
+            add(borderTile);
+        }
+        otherTiles.clear();
+    }
+
+    public void drawTiles(PApplet app) {
+
+        for (Tile tile : tiles)
+            tile.draw(app);
+    }
+
+    public void fill(TileList borderTiles, TileList fillTiles,
+        TileList concreteTiles, List<Enemy> enemies) {
+
+        Tile headTile = tiles.get(0);
+        Tile tailTile = tiles.get(tiles.size() - 1);
+
+        if (headTile.isParallelTo(tailTile))
+            fillForParallelHeadAndTail(borderTiles, fillTiles,
+                concreteTiles, headTile, tailTile, enemies);
+        
+        else if (headTile.isNormalTo(tailTile))
+            fillForNormalHeadAndTail(borderTiles, fillTiles,
+                concreteTiles, headTile, tailTile, enemies);
+        
+        else if (headTile.isOppositeTo(tailTile))
+            fillForOppositeHeadAndTail(borderTiles, fillTiles,
+                concreteTiles, headTile, tailTile, enemies);
+
+        borderTiles.convertToFillTiles(this);
+    }
+
     public Tile get(int index) {
 
         return tiles.get(index);
@@ -86,77 +127,48 @@ public class TileList {
         return null;
     }
 
-    public boolean isEmpty() {
+    public String getTileName() {
 
-        return (tiles.isEmpty());
+        return tileName;
     }
 
-    public boolean remove(Tile tile) {
+    public PImage getTileSprite() {
 
-        return tiles.remove(tile);
+        return tileSprite;
     }
 
-    public Tile remove(int index) {
+    public boolean isClosedOffBy(TileList borderTiles,
+        TileList concreteTiles) {
 
-        return tiles.remove(index);
-    }
-
-    public int size() {
-
-        return tiles.size();
-    }
-
-    public List<Tile> toArray() {
-
-        return tiles;
-    }
-
-    public String toString() {
-
-        return tiles.toString();
-    }
-
-    public boolean contains(Tile positionTile) {
-
-        return tiles.contains(positionTile);
-    }
-
-    public void drawTiles(PApplet app) {
-
-        for (Tile tile : tiles)
-            tile.draw(app);
-    }
-
-    public boolean isClosedOff(TileList fillTiles, TileList concreteTiles) {
-        
-        Tile headTile = new Tile(fillTiles.getTileSprite(), -1, -1);
-        Tile tailTile = new Tile(fillTiles.getTileSprite(), -1, -1);
+        Tile headTile =
+            new Tile(borderTiles.getTileSprite(), -1, -1, Info.PATH);
+        Tile tailTile =
+            new Tile(borderTiles.getTileSprite(), -1, -1, Info.PATH);
 
         if (!isEmpty() &&
-            !areAllAdjacentTo(concreteTiles) &&
-            !areAllAdjacentTo(fillTiles) &&
-            headAndTailTilesAreAdjacentTo(concreteTiles, fillTiles)) {
-            
+            !isAllAdjacentTo(concreteTiles) &&
+            !isAllAdjacentTo(borderTiles) &&
+            headAndTailAreAdjacentTo(borderTiles, concreteTiles))
+
             return true;
-        }
+        
         if (tiles.size() == 2) {
             headTile = tiles.get(0);
             tailTile = tiles.get(tiles.size() - 1);
         }
         if (tiles.size() == 2 &&
-            isOverriding &&
-            (headTile.isAdjacentTo(fillTiles, concreteTiles) &&
-            tailTile.isAdjacentTo(fillTiles, concreteTiles))) {
+            headTile.isAdjacentTo(borderTiles, concreteTiles) &&
+            tailTile.isAdjacentTo(borderTiles, concreteTiles)) {
 
             if ((headTile.getOrientation() == Direction.UP ||
                 headTile.getOrientation() == Direction.DOWN) &&
-                headTile.isVerticallyAdjacentTo(fillTiles)) {
+                headTile.isAdjacentVerticallyTo(borderTiles)) {
 
                 return true;
             }
             if ((headTile.getOrientation() == Direction.LEFT ||
                 headTile.getOrientation() == Direction.RIGHT) &&
-                headTile.isHorizontallyAdjacentTo(fillTiles)) {
+                headTile.isAdjacentHorizontallyTo(borderTiles)) {
 
                 return true;
             }
@@ -164,32 +176,12 @@ public class TileList {
         return false;
     }
 
-    public void fill(TileList fillTiles, TileList concreteTiles, List<Enemy> enemies) {
+    public boolean isEmpty() {
 
-        Tile headTile = tiles.get(0);
-        Tile tailTile = tiles.get(tiles.size() - 1);
-
-        if (headTile.isParallelTo(tailTile))
-            fillForSimilarHeadAndTailTile(fillTiles, concreteTiles, headTile,
-                tailTile, enemies);
-        
-        else if (headTile.isNormalTo(tailTile))
-            fillForNormalHeadAndTailTile(fillTiles, concreteTiles, headTile,
-                tailTile, enemies);
-        
-        else if (headTile.isOppositeTo(tailTile))
-            fillForOppositeHeadAndTailTile(fillTiles, concreteTiles, headTile,
-                tailTile, enemies);
-
-        fillTiles.convertToFillTiles(this);
+        return (tiles.isEmpty());
     }
 
-    public double getFilledPercentage(int fillableTiles) {
-
-        return ((double) size() / fillableTiles);
-    }
-
-    public void propagateRedPaths(PImage redPathSprite, int frameCount) {
+    public void propagate(PImage redPathSprite, int frameCount) {
 
         for (Tile tile : tiles) {
 
@@ -214,60 +206,14 @@ public class TileList {
         }
     }
 
-    private boolean areAllAdjacentTo(TileList otherTiles) {
+    public Tile remove(int index) {
 
-        for (Tile tile : tiles) {
-
-            if (!tile.isAdjacentTo(otherTiles))
-                return false;
-        }
-        return true;
+        return tiles.remove(index);
     }
 
-    private boolean headAndTailTilesAreAdjacentTo(TileList otherTiles,
-        TileList fillTiles) {
+    public boolean remove(Tile tile) {
 
-        Tile headTile = tiles.get(0);
-        Tile tailTile = tiles.get(tiles.size() - 1);
-
-        boolean tailIsAdjacent = false;
-        boolean headIsAdjacent = false;
-
-        for (Tile tile : otherTiles.toArray()) {
-
-            if (headTile.isAdjacentTo(tile))
-                headIsAdjacent = true;
-        }
-        for (Tile tile : fillTiles.toArray()) {
-
-            if (headTile.isAdjacentTo(tile))
-                headIsAdjacent = true;
-        }
-        for (Tile tile : otherTiles.toArray()) {
-
-            if (tailTile.isAdjacentTo(tile))
-                tailIsAdjacent = true;
-        }
-        for (Tile tile : fillTiles.toArray()) {
-
-            if (tailTile.isAdjacentTo(tile) &&
-                !headTile.equals(tailTile))
-                tailIsAdjacent = true;
-        }
-        return (tailIsAdjacent && headIsAdjacent);
-    }
-
-    public void convertToFillTiles(TileList otherTiles) {
-
-        for (Tile tile : otherTiles.toArray()) {
-
-            Tile borderTile = new Tile(tileSprite, tile.getX(),
-                tile.getY(), tileName);
-            borderTile.setOrientation(tile.getOrientation());
-
-            add(borderTile);
-        }
-        otherTiles.clear();
+        return tiles.remove(tile);
     }
 
     public void removeFloatingTiles() {
@@ -278,313 +224,21 @@ public class TileList {
 
             Tile tile = tiles.get(i);
 
-            if (tile.isFloating(this))
+            if (tile.isFloatingAround(this))
                 tiles.remove(tile);
             else
                 i++;
         }
     }
 
-    private void fillForSimilarHeadAndTailTile(TileList fillTiles,
-        TileList concreteTiles, Tile headTile, Tile tailTile,
-        List<Enemy> enemies) {
+    public int size() {
 
-        Direction direction = headTile.getOrientation().normal();
-
-        TileList bounds = new TileList(fillTiles.getTileSprite(), Info.GRASS);
-        int[][] limits = new int[2][2];
-        
-        bounds.addAll(this);
-        getBounds(bounds, fillTiles, concreteTiles, headTile, tailTile,
-            direction);
-        getBounds(bounds, fillTiles, concreteTiles, tailTile, headTile,
-            direction);
-
-        if (direction == Direction.UP ||
-            direction == Direction.DOWN)
-
-            limits =
-                new int[][] {{0, 0}, {Info.TOPBAR, Info.HEIGHT - tileSize}};
-
-        if (direction == Direction.LEFT ||
-            direction == Direction.RIGHT)
-
-            limits =
-                new int[][] {{0, Info.WIDTH - tileSize}, {0, 0}};
-
-        TileList firstScan =
-            fillRegion(bounds, fillTiles, concreteTiles, limits,
-                direction);
-        
-        bounds.clear();
-        bounds.addAll(this);
-        getBounds(bounds, fillTiles, concreteTiles, headTile, tailTile,
-            direction.flip());
-        getBounds(bounds, fillTiles, concreteTiles, tailTile, headTile,
-            direction.flip());
-
-        TileList secondScan =
-            fillRegion(bounds, fillTiles, concreteTiles, limits,
-                direction.flip());
-
-        firstScan.fillMissingStrips(fillTiles, concreteTiles, bounds,
-            secondScan);
-        secondScan.fillMissingStrips(fillTiles, concreteTiles, bounds,
-            firstScan);
-        
-        TileList[] regions = 
-            getRegions(firstScan, secondScan, concreteTiles, fillTiles, bounds);
-        
-        for (Enemy enemy : enemies) {
-
-            if (enemy.isInsideRegion(regions[0]))
-                regions[0].clear();
-            
-            if (enemy.isInsideRegion(regions[1]))
-                regions[1].clear();
-        }
-        fillTiles.addAll(regions[0]);
-        fillTiles.addAll(regions[1]);
+        return tiles.size();
     }
 
-    private void fillForNormalHeadAndTailTile(TileList fillTiles,
-        TileList concreteTiles, Tile headTile, Tile tailTile,
-        List<Enemy> enemies) {
-        
-        Direction firstDirection = tailTile.getOrientation();
-        Direction secondDirection = headTile.getOppositeOrientation();
+    public List<Tile> toArray() {
 
-        TileList bounds = new TileList();
-        int[][] limits;
-
-        bounds.addAll(this);
-        getBounds(bounds, fillTiles, concreteTiles, headTile, tailTile,
-            firstDirection);
-        getBounds(bounds, fillTiles, concreteTiles, tailTile, headTile,
-            secondDirection);
-        
-        limits = bounds.getLimits();
-
-        TileList firstScan =
-            fillRegion(bounds, fillTiles, concreteTiles, limits,
-                firstDirection);
-
-        if (!firstScan.isEnclosed(concreteTiles, fillTiles, bounds))
-            firstScan = fillRegion(bounds, fillTiles, concreteTiles, limits,
-                secondDirection);
-
-        bounds.clear();
-        bounds.addAll(this);
-        getBounds(bounds, fillTiles, concreteTiles, headTile, tailTile,
-            firstDirection.flip());
-        getBounds(bounds, fillTiles, concreteTiles, tailTile, headTile,
-            secondDirection.flip());
-
-        limits = bounds.getLimits();
-
-        TileList secondScan =
-            fillRegion(bounds, fillTiles, concreteTiles, limits,
-                firstDirection.flip());
-        
-        firstScan.fillMissingStrips(fillTiles, concreteTiles, bounds,
-            secondScan);
-        secondScan.fillMissingStrips(fillTiles, concreteTiles,  bounds,
-            firstScan);
-        
-        TileList[] regions = 
-            getRegions(firstScan, secondScan, concreteTiles, fillTiles, bounds);
-        
-        for (Enemy enemy : enemies) {
-
-            if (enemy.isInsideRegion(regions[0]))
-                regions[0].clear();
-            
-            if (enemy.isInsideRegion(regions[1]))
-                regions[1].clear();
-        }
-        fillTiles.addAll(regions[0]);
-        fillTiles.addAll(regions[1]);
-    }
-
-    private void fillForOppositeHeadAndTailTile(TileList fillTiles,
-        TileList concreteTiles, Tile headTile, Tile tailTile,
-        List<Enemy> enemies) {
-        
-        Direction direction = Direction.NONE;
-        
-        if (headTile.getOrientation() == Direction.LEFT ||
-            headTile.getOrientation() == Direction.RIGHT) {
-            
-            int distY = headTile.getY() - tailTile.getY();
-
-            if (distY > 0)
-                direction = Direction.UP;
-            else
-                direction = Direction.DOWN;
-        }
-        if (headTile.getOrientation() == Direction.UP ||
-            headTile.getOrientation() == Direction.DOWN) {
-            
-            int distX = headTile.getX() - tailTile.getX();
-
-            if (distX > 0)
-                direction = Direction.LEFT;
-            else
-                direction = Direction.RIGHT;
-        }
-        TileList bounds = new TileList();
-        int[][] limits;
-
-        bounds.addAll(this);
-        getBounds(bounds, fillTiles, concreteTiles, headTile, tailTile,
-            direction);
-        getBounds(bounds, fillTiles, concreteTiles, tailTile, headTile,
-            direction.flip());
-
-        limits = bounds.getLimits();
-
-        TileList firstScan =
-            fillRegion(bounds, fillTiles, concreteTiles, limits,
-                tailTile.getOrientation());
-
-        bounds.clear();
-        bounds.addAll(this);
-        getBounds(bounds, fillTiles, concreteTiles, headTile, tailTile,
-            direction.flip());
-        getBounds(bounds, fillTiles, concreteTiles, tailTile, headTile,
-            direction);
-
-        limits = bounds.getLimits();
-
-        TileList secondScan =
-            fillRegion(bounds, fillTiles, concreteTiles, limits,
-                headTile.getOrientation());
-        
-        firstScan.fillMissingStrips(fillTiles, concreteTiles, bounds,
-            secondScan);
-        secondScan.fillMissingStrips(fillTiles, concreteTiles,  bounds,
-            firstScan);
-        
-        TileList[] regions = 
-            getRegions(firstScan, secondScan, concreteTiles, fillTiles, bounds);
-        
-        for (Enemy enemy : enemies) {
-
-            if (enemy.isInsideRegion(regions[0]))
-                regions[0].clear();
-            
-            if (enemy.isInsideRegion(regions[1]))
-                regions[1].clear();
-        }
-        fillTiles.addAll(regions[0]);
-        fillTiles.addAll(regions[1]);
-    }
-
-    private TileList[] getRegions(TileList firstScan, TileList secondScan,
-        TileList concreteTiles, TileList fillTiles, TileList bounds) {
-
-        TileList firstRegion;
-        TileList secondRegion;
-
-        if (firstScan.isEnclosed(concreteTiles, fillTiles, bounds) &&
-            secondScan.isEnclosed(concreteTiles, fillTiles, bounds)) {
-            
-            firstRegion = firstScan;
-            secondRegion = secondScan;
-        }
-        else if (firstScan.isEnclosed(concreteTiles, fillTiles, bounds) ||
-            secondScan.equals(firstScan)) {
-
-            firstRegion = firstScan;
-            secondRegion = fillSurrounding(firstRegion, fillTiles, concreteTiles);
-        }
-        else if (secondScan.isEnclosed(concreteTiles, fillTiles, bounds)) {
-
-            secondRegion = secondScan;
-            firstRegion = fillSurrounding(secondRegion, fillTiles, concreteTiles);
-        }
-        else {
-
-            firstRegion = new TileList();
-            secondRegion = new TileList();
-        }
-        return new TileList[] { firstRegion, secondRegion };
-    }
-
-    private TileList fillRegion(TileList bounds, TileList fillTiles,
-        TileList concreteTiles, int[][] limits, Direction direction) {
-        
-        TileList regionTiles = new TileList(fillTiles.getTileSprite(), Info.GRASS);
-
-        switch (direction) {
-
-            case LEFT:
-                descendingSort(bounds, "X");
-                break;
-            case RIGHT:
-                ascendingSort(bounds, "X");
-                break;
-            case UP:
-                descendingSort(bounds, "Y");
-                break;
-            case DOWN:
-                ascendingSort(bounds, "Y");
-                break;
-            default:
-                break;
-        }
-        for (Tile bound : bounds.toArray()) {
-
-            TileList strip;
-
-            switch (direction) {
-
-                case LEFT:
-                    strip = fillLeft(bound, regionTiles, fillTiles,
-                                concreteTiles, limits[0][0]);
-                    break;
-                case RIGHT:
-                    strip = fillRight(bound, regionTiles, fillTiles,
-                                concreteTiles, limits[0][1]);
-                    break;
-                case UP:
-                    strip = fillUp(bound, regionTiles, fillTiles,
-                                concreteTiles, limits[1][0]);
-                    break;
-                case DOWN:
-                    strip = fillDown(bound, regionTiles, fillTiles,
-                                concreteTiles, limits[1][1]);
-                    break;
-                default:
-                    strip = new TileList();
-                    break;
-            }
-            regionTiles.addAll(strip);
-        }
-        return regionTiles;
-    }
-
-    private TileList fillSurrounding(TileList firstRegion, TileList fillTiles,
-        TileList concreteTiles) {
-
-        TileList regionTiles =
-            new TileList(fillTiles.getTileSprite(), Info.GRASS);
-        
-        for (int y = Info.TOPBAR; y < (Info.HEIGHT - tileSize); y += tileSize) {
-
-            for (int x = 0; x < (Info.WIDTH - tileSize); x += tileSize) {
-
-                Tile positionTile =
-                    new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
-
-                if (!firstRegion.contains(positionTile) &&
-                    !fillTiles.contains(positionTile) &&
-                    !concreteTiles.contains(positionTile))
-
-                    regionTiles.add(positionTile);
-            }
-        }
-        return regionTiles;
+        return tiles;
     }
 
     private void ascendingSort(TileList bounds, String xy) {
@@ -635,116 +289,264 @@ public class TileList {
         }
     }
 
-    private TileList fillLeft(Tile bound, TileList regionTiles,
-        TileList fillTiles, TileList concreteTiles, int limit) {
+    private void fillForOppositeHeadAndTail(TileList borderTiles,
+        TileList fillTiles, TileList concreteTiles, Tile headTile,
+        Tile tailTile, List<Enemy> enemies) {
         
-        TileList strip = new TileList();
-        Tile right = bound.getAdjacentTile(Direction.RIGHT);
-
-        if (this.contains(right) ||
-            regionTiles.contains(right) ||
-            fillTiles.contains(right))
-            return strip;
+        Direction direction = Direction.NONE;
         
-        int y = bound.getY();
-        
-        for (int x = (bound.getX() - tileSize); x > limit; x -= tileSize) {
-
-            Tile newTile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
-
-            if (this.contains(newTile) ||
-                concreteTiles.contains(newTile) ||
-                fillTiles.contains(newTile))
-                break;
-
-            strip.add(newTile);
-        }
-        return strip;
-    }
-
-    private TileList fillRight(Tile bound, TileList regionTiles,
-        TileList fillTiles, TileList concreteTiles, int limit) {
-        
-        TileList strip = new TileList();
-        Tile left = bound.getAdjacentTile(Direction.LEFT);
-
-        if (this.contains(left) ||
-            regionTiles.contains(left) ||
-            fillTiles.contains(left))
-            return strip;
-        
-        int y = bound.getY();
-        
-        for (int x = (bound.getX() + tileSize); x < limit; x += tileSize) {
-
-            Tile newTile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
-
-            if (this.contains(newTile) ||
-                concreteTiles.contains(newTile) ||
-                fillTiles.contains(newTile))
-                break;
+        if (headTile.getOrientation() == Direction.LEFT ||
+            headTile.getOrientation() == Direction.RIGHT) {
             
-            strip.add(newTile);
+            int distY = headTile.getY() - tailTile.getY();
+
+            if (distY > 0)
+                direction = Direction.UP;
+            else
+                direction = Direction.DOWN;
         }
-        return strip;
+        if (headTile.getOrientation() == Direction.UP ||
+            headTile.getOrientation() == Direction.DOWN) {
+            
+            int distX = headTile.getX() - tailTile.getX();
+
+            if (distX > 0)
+                direction = Direction.LEFT;
+            else
+                direction = Direction.RIGHT;
+        }
+        TileList bounds = new TileList();
+        int[][] limits;
+
+        bounds.addAll(this);
+        getBounds(bounds, borderTiles, concreteTiles, headTile, tailTile,
+            direction);
+        getBounds(bounds, borderTiles, concreteTiles, tailTile, headTile,
+            direction.flip());
+
+        limits = bounds.getLimits();
+
+        TileList firstScan =
+            fillInsideRegion(bounds, borderTiles, concreteTiles, limits,
+                tailTile.getOrientation());
+
+        bounds.clear();
+        bounds.addAll(this);
+        getBounds(bounds, borderTiles, concreteTiles, headTile, tailTile,
+            direction.flip());
+        getBounds(bounds, borderTiles, concreteTiles, tailTile, headTile,
+            direction);
+
+        limits = bounds.getLimits();
+
+        TileList secondScan =
+            fillInsideRegion(bounds, borderTiles, concreteTiles, limits,
+                headTile.getOrientation());
+        
+        firstScan.fillMissingStrips(borderTiles, fillTiles, concreteTiles,
+            bounds, secondScan);
+        secondScan.fillMissingStrips(borderTiles, fillTiles, concreteTiles,
+            bounds, firstScan);
+        
+        TileList[] regions = 
+            getRegions(firstScan, secondScan, borderTiles, concreteTiles,
+                bounds, enemies);
+        
+        fillTiles.addAll(regions[0]);
+        fillTiles.addAll(regions[1]);
     }
 
-    private TileList fillUp(Tile bound, TileList regionTiles,
-        TileList fillTiles, TileList concreteTiles, int limit) {
+    private void fillForNormalHeadAndTail(TileList borderTiles,
+    TileList fillTiles, TileList concreteTiles, Tile headTile,
+    Tile tailTile, List<Enemy> enemies) {
         
-        TileList strip = new TileList();
-        Tile down = bound.getAdjacentTile(Direction.DOWN);
+        Direction firstDirection = tailTile.getOrientation();
+        Direction secondDirection = headTile.getOppositeOrientation();
 
-        if (this.contains(down) ||
-            regionTiles.contains(down) ||
-            fillTiles.contains(down))
-            return strip;
+        TileList bounds = new TileList();
+        int[][] limits;
+
+        bounds.addAll(this);
+        getBounds(bounds, borderTiles, concreteTiles, headTile, tailTile,
+            firstDirection);
+        getBounds(bounds, borderTiles, concreteTiles, tailTile, headTile,
+            secondDirection);
         
-        int x = bound.getX();
+        limits = bounds.getLimits();
+
+        TileList firstScan =
+            fillInsideRegion(bounds, borderTiles, concreteTiles, limits,
+                firstDirection);
+
+        if (!firstScan.isEnclosed(borderTiles, concreteTiles, bounds))
+            firstScan =
+                fillInsideRegion(bounds, borderTiles, concreteTiles, limits,
+                    secondDirection);
+
+        bounds.clear();
+        bounds.addAll(this);
+        getBounds(bounds, borderTiles, concreteTiles, headTile, tailTile,
+            firstDirection.flip());
+        getBounds(bounds, borderTiles, concreteTiles, tailTile, headTile,
+            secondDirection.flip());
+
+        limits = bounds.getLimits();
+
+        TileList secondScan =
+            fillInsideRegion(bounds, borderTiles, concreteTiles, limits,
+                firstDirection.flip());
         
-        for (int y = (bound.getY() - tileSize); y > limit; y -= tileSize) {
+        firstScan.fillMissingStrips(borderTiles, fillTiles, concreteTiles,
+            bounds, secondScan);
+        secondScan.fillMissingStrips(borderTiles, fillTiles, concreteTiles,
+            bounds, firstScan);
+        
+        TileList[] regions = 
+            getRegions(firstScan, secondScan, borderTiles, concreteTiles,
+                bounds, enemies);
+        
+        fillTiles.addAll(regions[0]);
+        fillTiles.addAll(regions[1]);
+    }
 
-            Tile newTile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
+    private void fillForParallelHeadAndTail(TileList borderTiles,
+        TileList fillTiles, TileList concreteTiles, Tile headTile,
+        Tile tailTile, List<Enemy> enemies) {
 
-            if (this.contains(newTile) ||
-                concreteTiles.contains(newTile) ||
-                fillTiles.contains(newTile))
+        Direction direction = headTile.getOrientation().normal();
+
+        TileList bounds = new TileList(fillTiles.getTileSprite(), Info.GRASS);
+        int[][] limits = new int[2][2];
+        
+        bounds.addAll(this);
+        getBounds(bounds, borderTiles, concreteTiles, headTile, tailTile,
+            direction);
+        getBounds(bounds, borderTiles, concreteTiles, tailTile, headTile,
+            direction);
+
+        if (direction == Direction.UP ||
+            direction == Direction.DOWN)
+
+            limits =
+                new int[][] {{0, 0}, {Info.TOPBAR, Info.HEIGHT - tileSize}};
+
+        if (direction == Direction.LEFT ||
+            direction == Direction.RIGHT)
+
+            limits =
+                new int[][] {{0, Info.WIDTH - tileSize}, {0, 0}};
+
+        TileList firstScan =
+            fillInsideRegion(bounds, borderTiles, concreteTiles, limits,
+                direction);
+        
+        bounds.clear();
+        bounds.addAll(this);
+        getBounds(bounds, borderTiles, concreteTiles, headTile, tailTile,
+            direction.flip());
+        getBounds(bounds, borderTiles, concreteTiles, tailTile, headTile,
+            direction.flip());
+
+        TileList secondScan =
+            fillInsideRegion(bounds, borderTiles, concreteTiles, limits,
+                direction.flip());
+
+        firstScan.fillMissingStrips(borderTiles, fillTiles, concreteTiles,
+            bounds, secondScan);
+        secondScan.fillMissingStrips(borderTiles, fillTiles, concreteTiles,
+            bounds, firstScan);
+        
+        TileList[] regions = 
+            getRegions(firstScan, secondScan, borderTiles, concreteTiles,
+                bounds, enemies);
+        
+        fillTiles.addAll(regions[0]);
+        fillTiles.addAll(regions[1]);
+    }
+
+    private TileList fillInsideRegion(TileList bounds, TileList borderTiles,
+        TileList concreteTiles, int[][] limits, Direction direction) {
+        
+        TileList regionTiles =
+            new TileList(borderTiles.getTileSprite(), Info.GRASS);
+
+        switch (direction) {
+
+            case LEFT:
+                descendingSort(bounds, "X");
                 break;
-
-            strip.add(newTile);
-        }
-        return strip;
-    }
-
-    private TileList fillDown(Tile bound, TileList regionTiles,
-        TileList fillTiles, TileList concreteTiles, int limit) {
-        
-        TileList strip = new TileList();
-        Tile up = bound.getAdjacentTile(Direction.UP);
-
-        if (this.contains(up) ||
-            regionTiles.contains(up) ||
-            fillTiles.contains(up))
-            return strip;
-        
-        int x = bound.getX();
-        
-        for (int y = (bound.getY() + tileSize); y < limit; y += tileSize) {
-
-            Tile newTile = new Tile(fillTiles.getTileSprite(), x, y, Info.GRASS);
-
-            if (this.contains(newTile) ||
-                concreteTiles.contains(newTile) ||
-                fillTiles.contains(newTile))
+            case RIGHT:
+                ascendingSort(bounds, "X");
                 break;
-
-            strip.add(newTile);
+            case UP:
+                descendingSort(bounds, "Y");
+                break;
+            case DOWN:
+                ascendingSort(bounds, "Y");
+                break;
+            default:
+                break;
         }
-        return strip;
+        for (Tile bound : bounds.toArray()) {
+
+            TileList strip;
+
+            switch (direction) {
+
+                case LEFT:
+                    strip =
+                        fillStripLeftwards(bound, regionTiles, borderTiles,
+                            concreteTiles, limits[0][0]);
+                    break;
+                case RIGHT:
+                    strip =
+                        fillStripRightwards(bound, regionTiles, borderTiles,
+                            concreteTiles, limits[0][1]);
+                    break;
+                case UP:
+                    strip =
+                        fillStripUpwards(bound, regionTiles, borderTiles,
+                            concreteTiles, limits[1][0]);
+                    break;
+                case DOWN:
+                    strip =
+                        fillStripDownwards(bound, regionTiles, borderTiles,
+                            concreteTiles, limits[1][1]);
+                    break;
+                default:
+                    strip = new TileList();
+                    break;
+            }
+            regionTiles.addAll(strip);
+        }
+        return regionTiles;
     }
 
-    private void fillMissingStrips(TileList fillTiles, TileList concreteTiles,
-        TileList bounds, TileList otherScan) {
+    private TileList fillOutsideRegion(TileList firstRegion,
+        TileList borderTiles, TileList concreteTiles) {
+
+        TileList regionTiles =
+            new TileList(borderTiles.getTileSprite(), Info.GRASS);
+        
+        for (int y = Info.TOPBAR; y < (Info.HEIGHT - tileSize); y += tileSize) {
+
+            for (int x = 0; x < (Info.WIDTH - tileSize); x += tileSize) {
+
+                Tile positionTile =
+                    new Tile(borderTiles.getTileSprite(), x, y, Info.GRASS);
+
+                if (!firstRegion.contains(positionTile) &&
+                    !borderTiles.contains(positionTile) &&
+                    !concreteTiles.contains(positionTile))
+
+                    regionTiles.add(positionTile);
+            }
+        }
+        return regionTiles;
+    }
+
+    private void fillMissingStrips(TileList borderTiles, TileList fillTiles,
+        TileList concreteTiles, TileList bounds, TileList otherScan) {
         
         for (int y = Info.TOPBAR; y < (Info.HEIGHT - tileSize); y += tileSize) {
 
@@ -753,7 +555,7 @@ public class TileList {
                 Tile positionTile =
                     new Tile(tileSprite, x, y, Info.GRASS);
 
-                if (fillTiles.contains(positionTile) ||
+                if (borderTiles.contains(positionTile) ||
                     concreteTiles.contains(positionTile) ||
                     bounds.contains(positionTile) ||
                     otherScan.contains(positionTile) ||
@@ -764,7 +566,9 @@ public class TileList {
 
                 for (Tile tile : adjacentTiles.toArray()) {
 
-                    if (this.contains(tile)) {
+                    if (this.contains(tile) ||
+                        fillTiles.contains(tile)) {
+                        
                         this.add(positionTile);
                         break;
                     }
@@ -773,27 +577,166 @@ public class TileList {
         }
     }
 
-    private boolean isEnclosed(TileList concreteTiles, TileList fillTiles,
-        TileList bounds) {
-
-        if (tiles.isEmpty())
-            return false;
+    private TileList fillStripDownwards(Tile bound, TileList regionTiles,
+        TileList borderTiles, TileList concreteTiles, int limit) {
         
-        for (Tile tile : tiles) {
+        TileList strip = new TileList();
+        Tile up = bound.getAdjacentTile(Direction.UP);
 
-            TileList adjacentTiles = tile.getAdjacentTiles();
+        if (this.contains(up) ||
+            regionTiles.contains(up) ||
+            borderTiles.contains(up))
+            return strip;
+        
+        int x = bound.getX();
+        
+        for (int y = (bound.getY() + tileSize); y < limit; y += tileSize) {
 
-            for (Tile adjacentTile : adjacentTiles.toArray()) {
+            Tile newTile =
+                new Tile(borderTiles.getTileSprite(), x, y, Info.GRASS);
 
-                if (!this.contains(adjacentTile) &&
-                    !concreteTiles.contains(adjacentTile) &&
-                    !bounds.contains(adjacentTile) &&
-                    !fillTiles.contains(adjacentTile))
-                    
-                    return false;
-            }
+            if (this.contains(newTile) ||
+                concreteTiles.contains(newTile) ||
+                borderTiles.contains(newTile))
+                break;
+
+            strip.add(newTile);
         }
-        return true;
+        return strip;
+    }
+
+    private TileList fillStripLeftwards(Tile bound, TileList regionTiles,
+        TileList borderTiles, TileList concreteTiles, int limit) {
+        
+        TileList strip = new TileList();
+        Tile right = bound.getAdjacentTile(Direction.RIGHT);
+
+        if (this.contains(right) ||
+            regionTiles.contains(right) ||
+            borderTiles.contains(right))
+            return strip;
+        
+        int y = bound.getY();
+        
+        for (int x = (bound.getX() - tileSize); x > limit; x -= tileSize) {
+
+            Tile newTile =
+                new Tile(borderTiles.getTileSprite(), x, y, Info.GRASS);
+
+            if (this.contains(newTile) ||
+                concreteTiles.contains(newTile) ||
+                borderTiles.contains(newTile))
+                break;
+
+            strip.add(newTile);
+        }
+        return strip;
+    }
+
+    private TileList fillStripRightwards(Tile bound, TileList regionTiles,
+        TileList borderTiles, TileList concreteTiles, int limit) {
+        
+        TileList strip = new TileList();
+        Tile left = bound.getAdjacentTile(Direction.LEFT);
+
+        if (this.contains(left) ||
+            regionTiles.contains(left) ||
+            borderTiles.contains(left))
+            return strip;
+        
+        int y = bound.getY();
+        
+        for (int x = (bound.getX() + tileSize); x < limit; x += tileSize) {
+
+            Tile newTile =
+                new Tile(borderTiles.getTileSprite(), x, y, Info.GRASS);
+
+            if (this.contains(newTile) ||
+                concreteTiles.contains(newTile) ||
+                borderTiles.contains(newTile))
+                break;
+            
+            strip.add(newTile);
+        }
+        return strip;
+    }
+
+    private TileList fillStripUpwards(Tile bound, TileList regionTiles,
+        TileList borderTiles, TileList concreteTiles, int limit) {
+        
+        TileList strip = new TileList();
+        Tile down = bound.getAdjacentTile(Direction.DOWN);
+
+        if (this.contains(down) ||
+            regionTiles.contains(down) ||
+            borderTiles.contains(down))
+            return strip;
+        
+        int x = bound.getX();
+        
+        for (int y = (bound.getY() - tileSize); y > limit; y -= tileSize) {
+
+            Tile newTile =
+                new Tile(borderTiles.getTileSprite(), x, y, Info.GRASS);
+
+            if (this.contains(newTile) ||
+                concreteTiles.contains(newTile) ||
+                borderTiles.contains(newTile))
+                break;
+
+            strip.add(newTile);
+        }
+        return strip;
+    }
+
+    public void getBounds(TileList bounds, TileList borderTiles,
+        TileList concreteTiles, Tile start, Tile end, Direction direction) {
+
+        Tile current = start;
+        Direction previousDirection = Direction.NONE;
+        boolean collidedWithConcrete = false;
+
+        while (true) {
+
+            boolean hasUpdated = false;
+            TileList directionTiles = getDirectionTiles(current, direction);
+            
+            for (Tile tile : directionTiles.toArray()) {
+
+                if (borderTiles.get(tile) != null &&
+                    previousDirection != tile.getOppositeOrientation()) {
+                
+                    current = tile;
+                    bounds.add(current);
+                    previousDirection = tile.getOrientation();
+                    hasUpdated = true;
+                    break;
+                }
+            }
+            for (Tile tile : directionTiles.toArray()) {
+
+                if (concreteTiles.contains(tile)) {
+                    
+                    collidedWithConcrete = true;
+                    hasUpdated = true;
+                    break;
+                }
+            }
+            if (!hasUpdated ||
+                collidedWithConcrete ||
+                directionTiles.contains(end))
+                break;
+        }
+    }
+
+    private TileList getDirectionTiles(Tile currentTile, Direction direction) {
+
+        Tile first = currentTile.getAdjacentTile(direction);
+        Tile second = currentTile.getAdjacentTile(direction.normal());
+        Tile third = currentTile.getAdjacentTile(direction.normal().flip());
+        Tile fourth = currentTile.getAdjacentTile(direction.normal());
+
+        return new TileList(new Tile[] {first, second, third, fourth});
     }
 
     private int[][] getLimits() {
@@ -819,56 +762,112 @@ public class TileList {
                             {yUpper - tileSize, yLower + tileSize}};
     }
 
-    public void getBounds(TileList bounds, TileList fillTiles,
-        TileList concreteTiles, Tile start, Tile end, Direction direction) {
+    private TileList[] getRegions(TileList firstScan, TileList secondScan,
+        TileList borderTiles, TileList concreteTiles, TileList bounds,
+        List<Enemy> enemies) {
 
-        Tile current = start;
-        Direction previousDirection = Direction.NONE;
-        boolean collidedWithConcrete = false;
+        TileList firstRegion;
+        TileList secondRegion;
 
-        while (true) {
-
-            // System.out.println("Current tile: "+current);
-            boolean hasUpdated = false;
-            TileList adjacentTiles = getAdjacentTiles(current, direction);
+        if (firstScan.isEnclosed(borderTiles, concreteTiles, bounds) &&
+            secondScan.isEnclosed(borderTiles, concreteTiles, bounds)) {
             
-            for (Tile tile : adjacentTiles.toArray()) {
-
-                if (fillTiles.get(tile) != null &&
-                    fillTiles.get(tile).getOrientation() != Direction.NONE &&
-                    previousDirection != tile.getOppositeOrientation()) {
-                
-                    current = tile;
-                    bounds.add(current);
-                    previousDirection = tile.getOrientation();
-                    hasUpdated = true;
-                    break;
-                }
-            }
-            for (Tile tile : adjacentTiles.toArray()) {
-
-                if (concreteTiles.contains(tile)) {
-                    
-                    collidedWithConcrete = true;
-                    hasUpdated = true;
-                    break;
-                }
-            }
-            if (!hasUpdated ||
-                collidedWithConcrete ||
-                adjacentTiles.contains(end))
-                break;
+            firstRegion = firstScan;
+            secondRegion = secondScan;
         }
+        else if (firstScan.isEnclosed(borderTiles, concreteTiles, bounds) ||
+            secondScan.equals(firstScan)) {
+
+            firstRegion = firstScan;
+            secondRegion = fillOutsideRegion(firstRegion, borderTiles,
+                concreteTiles);
+        }
+        else if (secondScan.isEnclosed(borderTiles, concreteTiles, bounds)) {
+
+            secondRegion = secondScan;
+            firstRegion = fillOutsideRegion(secondRegion, borderTiles,
+                concreteTiles);
+        }
+        else {
+
+            firstRegion = new TileList();
+            secondRegion = new TileList();
+        }
+        for (Enemy enemy : enemies) {
+
+            if (enemy.isInsideRegion(firstRegion))
+                firstRegion.clear();
+            
+            if (enemy.isInsideRegion(secondRegion))
+                secondRegion.clear();
+        }
+        return new TileList[] { firstRegion, secondRegion };
     }
 
-    private TileList getAdjacentTiles(Tile currentTile, Direction direction) {
+    private boolean headAndTailAreAdjacentTo(TileList borderTiles,
+        TileList otherTiles) {
 
-        Tile first = currentTile.getAdjacentTile(direction);
-        Tile second = currentTile.getAdjacentTile(direction.normal());
-        Tile third = currentTile.getAdjacentTile(direction.normal().flip());
-        Tile fourth = currentTile.getAdjacentTile(direction.normal());
+        Tile headTile = tiles.get(0);
+        Tile tailTile = tiles.get(tiles.size() - 1);
 
-        return new TileList(new Tile[] {first, second, third, fourth});
+        boolean tailIsAdjacent = false;
+        boolean headIsAdjacent = false;
+
+        for (Tile tile : otherTiles.toArray()) {
+
+            if (headTile.isAdjacentTo(tile))
+                headIsAdjacent = true;
+        }
+        for (Tile tile : borderTiles.toArray()) {
+
+            if (headTile.isAdjacentTo(tile))
+                headIsAdjacent = true;
+        }
+        for (Tile tile : otherTiles.toArray()) {
+
+            if (tailTile.isAdjacentTo(tile))
+                tailIsAdjacent = true;
+        }
+        for (Tile tile : borderTiles.toArray()) {
+
+            if (tailTile.isAdjacentTo(tile) &&
+                !headTile.equals(tailTile))
+                tailIsAdjacent = true;
+        }
+        return (tailIsAdjacent && headIsAdjacent);
+    }
+
+    private boolean isAllAdjacentTo(TileList otherTiles) {
+
+        for (Tile tile : tiles) {
+
+            if (!tile.isAdjacentTo(otherTiles))
+                return false;
+        }
+        return true;
+    }
+
+    private boolean isEnclosed(TileList borderTiles, TileList concreteTiles,
+        TileList bounds) {
+
+        if (tiles.isEmpty())
+            return false;
+        
+        for (Tile tile : tiles) {
+
+            TileList adjacentTiles = tile.getAdjacentTiles();
+
+            for (Tile adjacentTile : adjacentTiles.toArray()) {
+
+                if (!this.contains(adjacentTile) &&
+                    !borderTiles.contains(adjacentTile) &&
+                    !concreteTiles.contains(adjacentTile) &&
+                    !bounds.contains(adjacentTile))
+                    
+                    return false;
+            }
+        }
+        return true;
     }
 
 }

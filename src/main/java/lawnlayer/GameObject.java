@@ -5,42 +5,28 @@ import processing.core.PImage;
 import processing.core.PApplet;
 
 public abstract class GameObject {
-
+    
     protected String name;
     protected PImage sprite;
+    protected int size;
     protected int x;
     protected int y;
 
-    protected static int size = Info.SPRITESIZE;
     protected Random rand = new Random();
 
     protected GameObject(PImage sprite, String name) {
-        /*
-         * Randomises spawn location if information is not given when
-         * object is instantiated.
-         */
+        
         this.name = name;
         this.sprite = sprite;
+        size = Info.SPRITESIZE;
         randomiseXY();
-    }
-
-    protected GameObject(int x, int y) {
-
-        this.x = x;
-        this.y = y;
-    }
-
-    protected GameObject(PImage sprite, int x, int y) {
-
-        this.sprite = sprite;
-        this.x = x;
-        this.y = y;
     }
 
     protected GameObject(PImage sprite, int x, int y, String name) {
 
         this.name = name;
         this.sprite = sprite;
+        size = Info.SPRITESIZE;
         this.x = x;
         this.y = y;
     }
@@ -49,6 +35,7 @@ public abstract class GameObject {
 
         this.name = name;
         this.sprite = sprite;
+        size = Info.SPRITESIZE;
 
         int row = Integer.parseInt(location.split(",")[0]);
         int col = Integer.parseInt(location.split(",")[1]);
@@ -62,20 +49,9 @@ public abstract class GameObject {
         y = yMin + rand.nextInt(yMax - yMin);
     }
 
-    protected void randomiseXY() {
+    public void draw(PApplet app) {
 
-        x = rand.nextInt(Info.WIDTH - 2*size + 1);
-        y = Info.TOPBAR + rand.nextInt(Info.HEIGHT - 2*size + 1);
-    }
-
-    public int getX() {
-        
-        return x;
-    }
-
-    public int getY() {
-        
-        return y;
+        app.image(sprite, x, y);
     }
 
     public int getMidX() {
@@ -88,6 +64,16 @@ public abstract class GameObject {
         return y + (size / 2);
     }
 
+    public int getX() {
+        
+        return x;
+    }
+
+    public int getY() {
+        
+        return y;
+    }
+
     public String getName() {
         
         return name;
@@ -96,6 +82,14 @@ public abstract class GameObject {
     public PImage getSprite() {
         
         return sprite;
+    }
+
+    protected void randomiseXY() {
+        /**
+         * Randomises x and y values of GameObject.
+         */
+        x = rand.nextInt(Info.WIDTH - 2*size + 1);
+        y = Info.TOPBAR + rand.nextInt(Info.HEIGHT - 2*size + 1);
     }
 
     public void setName(String name) {
@@ -108,12 +102,9 @@ public abstract class GameObject {
         this.sprite = sprite;
     }
 
-    public void draw(PApplet app) {
-        app.image(sprite, x, y);
-    }
-
     @Override
     public String toString() {
+        
         return String.format("%s@[%d,%d]", name, x, y);
     }
 
