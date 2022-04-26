@@ -14,14 +14,20 @@ public abstract class GameObject {
     protected static int size = Info.SPRITESIZE;
     protected Random rand = new Random();
 
-    protected GameObject(PImage sprite) {
+    protected GameObject(PImage sprite, String name) {
         /*
          * Randomises spawn location if information is not given when
          * object is instantiated.
          */
+        this.name = name;
         this.sprite = sprite;
-        this.x = rand.nextInt(Info.WIDTH - 2*size + 1);
-        this.y = rand.nextInt(Info.HEIGHT - 2*size + 1);
+        randomiseXY();
+    }
+
+    protected GameObject(int x, int y) {
+
+        this.x = x;
+        this.y = y;
     }
 
     protected GameObject(PImage sprite, int x, int y) {
@@ -29,6 +35,37 @@ public abstract class GameObject {
         this.sprite = sprite;
         this.x = x;
         this.y = y;
+    }
+
+    protected GameObject(PImage sprite, int x, int y, String name) {
+
+        this.name = name;
+        this.sprite = sprite;
+        this.x = x;
+        this.y = y;
+    }
+
+    protected GameObject(PImage sprite, String location, String name) {
+
+        this.name = name;
+        this.sprite = sprite;
+
+        int row = Integer.parseInt(location.split(",")[0]);
+        int col = Integer.parseInt(location.split(",")[1]);
+
+        int xMax = row * size;
+        int xMin = xMax - size;
+        int yMax = Info.TOPBAR + (col * size);
+        int yMin = yMax - size;
+
+        x = xMin + rand.nextInt(xMax - xMin);
+        y = yMin + rand.nextInt(yMax - yMin);
+    }
+
+    protected void randomiseXY() {
+
+        x = rand.nextInt(Info.WIDTH - 2*size + 1);
+        y = Info.TOPBAR + rand.nextInt(Info.HEIGHT - 2*size + 1);
     }
 
     public int getX() {

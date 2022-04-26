@@ -11,6 +11,7 @@ public final class Info {
     public static final int HEIGHT = 720;
     public static final int TOPBAR = 80;
     public static final int FPS = 60;
+    public static final int ENDGAMESCREENDELAY = 3;
 
     // Entities info
     public static final int SPRITESIZE = 20;

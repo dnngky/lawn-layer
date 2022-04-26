@@ -1,30 +1,48 @@
 package lawnlayer;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 
 import processing.core.PApplet;
 import processing.core.PImage;
-//import processing.data.JSONObject;
-//import processing.data.JSONArray;
-//import processing.core.PFont;
+import processing.data.JSONObject;
+import processing.data.JSONArray;
+import processing.core.PFont;
 
 public class App extends PApplet {
 
     public final String configPath;
+    private PFont font;
 
     private PImage soil;
+    private PImage concreteSprite;
     private PImage greenPathSprite;
     private PImage redPathSprite;
+    private PImage wormSprite;
+    private PImage beetleSprite;
+    private PImage heart;
 
-    private TileList concreteTiles;
+    private Map<Integer,String> outlays;
+    private Map<Integer,TileList> concretes;
+    private Map<Integer,List<Enemy>> enemies;
+    private Map<Integer,Integer> fillables;
+    private Map<Integer,Float> goals;
+    private int lives;
+
     private TileList pathTiles;
     private TileList grassTiles;
 
     private Player player;
-    private List<Enemy> enemies;
+    private int currentLevel;
+    private int gameOverTime;
 
     public App() {
+
         this.configPath = "config.json";
     }
 
@@ -33,6 +51,7 @@ public class App extends PApplet {
      */
     @Override
     public void settings() {
+
         size(Info.WIDTH, Info.HEIGHT);
     }
 
@@ -45,35 +64,49 @@ public class App extends PApplet {
 
         frameRate(Info.FPS);
 
-        // Load images during setup
+        // Load images and fonts during setup
 
         soil = loadImage(this.getClass().getResource("background4.png").getPath());
+        concreteSprite = loadImage(this.getClass().getResource("concrete_tile.png").getPath());
         greenPathSprite = loadImage(this.getClass().getResource("green_path.png").getPath());
         redPathSprite = loadImage(this.getClass().getResource("red_path.png").getPath());
-
+        wormSprite = loadImage(this.getClass().getResource("worm.png").getPath());
+        beetleSprite = loadImage(this.getClass().getResource("beetle.png").getPath());
+        heart = loadImage(this.getClass().getResource("heart_smaller.png").getPath());
+        
         PImage grassSprite = loadImage(this.getClass().getResource("grass_tile1.png").getPath());
-        PImage concreteSprite = loadImage(this.getClass().getResource("concrete_tile.png").getPath());
         PImage ballSprite = loadImage(this.getClass().getResource("ball.png").getPath());
-        PImage wormSprite = loadImage(this.getClass().getResource("worm.png").getPath());
-        PImage beetleSprite = loadImage(this.getClass().getResource("beetle.png").getPath());
 
-        concreteTiles = new TileList(concreteSprite, Info.CONCRETE);
+        font = createFont(this.getClass().getResource("upheavtt.ttf").getPath(), 50, false);
+
+        // Initialise config information containers
+
+        outlays = new HashMap<>();
+        fillables = new HashMap<>();
+        enemies = new HashMap<>();
+        goals = new HashMap<>();
+
+        // Initialise tile containers
+        
+        concretes = new HashMap<>();
         pathTiles = new TileList(greenPathSprite, Info.PATH);
         grassTiles = new TileList(grassSprite, Info.GRASS);
 
-        for (int i = 0; i < (Info.WIDTH / Info.SPRITESIZE); i++) {
-            concreteTiles.add(new Tile(concreteSprite, i * Info.SPRITESIZE, 0, Info.CONCRETE), false);
-            concreteTiles.add(new Tile(concreteSprite, i * Info.SPRITESIZE, Info.HEIGHT - Info.SPRITESIZE, Info.CONCRETE), false);
-        }
-        for (int i = 0; i < (Info.HEIGHT / Info.SPRITESIZE); i++) {
-            concreteTiles.add(new Tile(concreteSprite, 0, i * Info.SPRITESIZE, Info.CONCRETE), false);
-            concreteTiles.add(new Tile(concreteSprite, Info.WIDTH - Info.SPRITESIZE, i * Info.SPRITESIZE, Info.CONCRETE), false);
-        }
-        player = new Player(ballSprite);
+        // Load JSON file
 
-        enemies = new ArrayList<>();
-        enemies.add(new Enemy(wormSprite, Info.WORM));
-        enemies.add(new Enemy(beetleSprite, Info.BEETLE));
+        loadConfigFile();
+
+        // Draw concrete tiles and calculate fillable tiles for each level
+
+        outlays.forEach((level, filename) ->
+            concretes.put(level, drawConcretes(filename)));
+        outlays.forEach((level, filename) ->
+            fillables.put(level, calculateFillableTiles(filename)));
+        
+        // Initialise player and level
+        
+        player = new Player(ballSprite);
+        currentLevel = 1;
     }
 
     /*
@@ -83,100 +116,107 @@ public class App extends PApplet {
     public void draw() {
 
         background(soil);
+        textFont(font);
+        fill(0);
 
-        Tile overlappedTile = player.getOverlappedTile(concreteTiles,
-            grassTiles, pathTiles);
-        
-        Tile newPath = player.createPath(greenPathSprite);
+        int fillableTiles;
+        TileList concreteTiles;
+        List<Enemy> enemiesOnThisLevel;
 
-        updatePlayer(enemies, pathTiles, overlappedTile);
-        updateEnemies(concreteTiles, grassTiles, pathTiles);
-        updatePathTiles(overlappedTile, newPath);
-        
-        concreteTiles.drawTiles(this);
-        grassTiles.drawTiles(this);
-        pathTiles.drawTiles(this);
+        double percentageFilled;
+        double fillGoal;
 
-        player.draw(this);
+        try {
 
-        for (Enemy enemy : enemies)
-            enemy.draw(this);
-    }
+            fillableTiles = fillables.get(currentLevel);
+            concreteTiles = concretes.get(currentLevel);
+            enemiesOnThisLevel = enemies.get(currentLevel);
 
-    private void updatePlayer(List<Enemy> enemies, TileList pathTiles,
-        Tile overlappedTile) {
-        
-        player.update(overlappedTile);
+            percentageFilled =
+                grassTiles.getFilledPercentage(fillableTiles);
+            fillGoal = goals.get(currentLevel);
+        }
+        catch (NullPointerException e) {
 
-        if (player.isOverlapping(pathTiles) &&
-            (overlappedTile != pathTiles.get(pathTiles.size() - 1) ||
-            overlappedTile.isCollided())) {
+            concreteTiles = new TileList();
+            enemiesOnThisLevel = new ArrayList<>();
 
-            player.respawn();
+            percentageFilled = -1;
+            fillGoal = -1;
+        }
+        textAlign(RIGHT, CENTER);
+        text((int)(percentageFilled * 100) + "% | " + (int)(fillGoal*100) + "%", 1250, 35);
+
+        textAlign(CENTER, CENTER);
+        text("Level " + currentLevel, 640, 35);
+
+        int x = 30;
+        for (int n = 0; n < lives; n++) {
+            image(heart, x, 25);
+            x += 50;
+        }
+        if (gameOverTime == 0) {
+
+            Tile overlappedTile = player.getOverlappedTile(concreteTiles,
+                grassTiles, pathTiles);
+            Tile newPath = player.createPath(greenPathSprite);
+
+            updatePlayer(enemiesOnThisLevel, pathTiles, overlappedTile);
+            updateEnemies(enemiesOnThisLevel, concreteTiles, grassTiles,
+                pathTiles);
+            updatePathTiles(enemiesOnThisLevel, concreteTiles, overlappedTile,
+                newPath);
+            
+            concreteTiles.drawTiles(this);
+            grassTiles.drawTiles(this);
+            pathTiles.drawTiles(this);
+
+            player.draw(this);
+
+            for (Enemy enemy : enemiesOnThisLevel)
+                enemy.draw(this);
+        }
+        if (percentageFilled >= fillGoal) {
+
+            currentLevel++;
+            grassTiles.clear();
             pathTiles.clear();
+            player.respawn();
         }
-        for (Enemy enemy : enemies) {
+        if (lives == 0) {
 
-            if (player.isOverlapping(enemy)) {
+            concreteTiles.clear();
+            grassTiles.clear();
+            pathTiles.clear();
 
-                player.respawn();
-                pathTiles.clear();
-                break;
-            }
+            background(0);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("You lose :(", 640, 360);
+
+            if (gameOverTime == 0)
+                gameOverTime = frameCount;
         }
-        player.move();
+        if (currentLevel > goals.size()) {
+
+            concreteTiles.clear();
+            grassTiles.clear();
+            pathTiles.clear();
+
+            background(107, 142, 35);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("You win :)", 640, 360);
+
+            if (gameOverTime == 0)
+                gameOverTime = frameCount;
+        }
+        if (gameOverTime > 0 &&
+            frameCount - gameOverTime == Info.FPS*Info.ENDGAMESCREENDELAY)
+            exit();
     }
 
-    private void updateEnemies(TileList concreteTiles, TileList grassTiles,
-        TileList pathTiles) {
-        
-        for (int i = 0; i < Info.SPEED; i++) {
-
-            for (Enemy enemy : enemies) {
-
-                enemy.checkForCollisionWith(concreteTiles, true);
-                enemy.checkForCollisionWith(pathTiles, false);
-                enemy.checkForCollisionWith(grassTiles, false);
-
-                if (enemy.hasCollidedWith(pathTiles)) {
-
-                    Tile collidedTile = enemy.getCollidedTile();
-                    collidedTile.turnRed(redPathSprite, frameCount);
-                }
-                enemy.move();
-            }
-        }
-    }
-
-    private void updatePathTiles(Tile overlappedTile, Tile newPath) {
-        
-        if (newPath != null && !player.isOverlapping(grassTiles))
-            pathTiles.add(newPath, false);
-        
-        if (newPath != null && overlappedTile != null &&
-            overlappedTile.isHidden()) {
-            
-            grassTiles.remove(overlappedTile);
-            pathTiles.add(newPath, false);
-            pathTiles.enableOverriding();
-        }
-        if (pathTiles.isEnclosed(grassTiles, concreteTiles)) {
-            
-            System.out.println("Enclosed");
-            player.stop();
-            pathTiles.fill(grassTiles, concreteTiles, enemies);
-        }
-        if (player.isOverlapping(concreteTiles) ||
-            (player.isOverlapping(grassTiles) &&
-            overlappedTile != null &&
-            !overlappedTile.isHidden()))
-            
-            grassTiles.convertToFillTiles(pathTiles);
-
-        pathTiles.propagateRedPaths(redPathSprite, frameCount);
-    }
-
-    /*
+    /**
      * Runs when player presses a keyboard key.
      */
     @Override
@@ -197,6 +237,182 @@ public class App extends PApplet {
             default:
                 break;
         }
+    }
+
+    private void loadConfigFile() {
+
+        JSONObject values = loadJSONObject(configPath);
+        JSONArray levels = values.getJSONArray("levels");
+
+        for (int i = 0; i < levels.size(); i++) {
+
+            JSONObject level = levels.getJSONObject(i);
+
+            outlays.put(i + 1, level.getString("outlay"));
+
+            JSONArray enemyArray = level.getJSONArray("enemies");
+            List<Enemy> enemyList = new ArrayList<>();
+
+            for (int j = 0; j < enemyArray.size(); j++) {
+
+                JSONObject enemy = enemyArray.getJSONObject(j);
+
+                PImage sprite;
+                String type;
+
+                if (enemy.getInt("type") == 0) {
+                    sprite = wormSprite;
+                    type = Info.WORM;
+                }
+                else {
+                    sprite = beetleSprite;
+                    type = Info.BEETLE;
+                }
+                String spawn = enemy.getString("spawn");
+
+                if (spawn.equals("random"))
+                    enemyList.add(new Enemy(sprite, type));
+                else
+                    enemyList.add(new Enemy(sprite, spawn, type));
+            }
+            enemies.put(i + 1, enemyList);
+            
+            goals.put(i + 1, level.getFloat("goal"));
+        }
+        lives = values.getInt("lives");
+    }
+
+    private TileList drawConcretes(String filename) {
+        
+        File outlayFile = new File(filename);
+        TileList concreteTiles = new TileList();
+
+        try {
+            Scanner scan = new Scanner(outlayFile);
+            int y = 80;
+
+            while (scan.hasNextLine()) {
+
+                String row = scan.nextLine();
+
+                for (int j = 0; j < row.length(); j++) {
+
+                    char c = row.charAt(j);
+                    int x = j*Info.SPRITESIZE;
+
+                    if (c == 'X') {
+                        Tile concreteTile =
+                            new Tile(concreteSprite, x, y, Info.CONCRETE);
+                        concreteTiles.add(concreteTile);
+                    }
+                }
+                y += Info.SPRITESIZE;
+            }
+            scan.close();
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return concreteTiles;
+    }
+
+    private int calculateFillableTiles(String filename) {
+        
+        File outlayFile = new File(filename);
+        int fillableTiles = 0;
+
+        try {
+            Scanner scan = new Scanner(outlayFile);
+
+            while (scan.hasNextLine()) {
+
+                String row = scan.nextLine();
+
+                for (int j = 0; j < row.length(); j++) {
+
+                    char c = row.charAt(j);
+                    if (c != 'X') {
+                        fillableTiles++;
+                    }
+                }
+            }
+            scan.close();
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return fillableTiles;
+    }
+
+    private void updatePlayer(List<Enemy> enemiesOnThisLevel,
+        TileList pathTiles, Tile overlappedTile) {
+        
+        player.update(overlappedTile);
+        boolean playerHasDied = false;
+
+        if (player.isOverlapping(pathTiles) &&
+            (overlappedTile != pathTiles.get(pathTiles.size() - 1) ||
+            overlappedTile.isCollided())) {
+
+            playerHasDied = true;
+        }
+        for (Enemy enemy : enemiesOnThisLevel) {
+
+            if (player.isOverlapping(enemy)) {
+                playerHasDied = true;
+                break;
+            }
+        }
+        if (playerHasDied) {
+
+            player.respawn();
+            pathTiles.clear();
+            lives--;
+        }
+        player.move();
+    }
+
+    private void updateEnemies(List<Enemy> enemiesOnThisLevel,
+        TileList concreteTiles, TileList grassTiles, TileList pathTiles) {
+        
+        for (Enemy enemy : enemiesOnThisLevel) {
+
+            enemy.unstuckIfIsStuckInside(concreteTiles);
+            enemy.unstuckIfIsStuckInside(pathTiles);
+            enemy.unstuckIfIsStuckInside(grassTiles);
+
+            enemy.checkForCollisionWith(concreteTiles, false);
+            enemy.checkForCollisionWith(pathTiles, false);
+            enemy.checkForCollisionWith(grassTiles, false);
+
+            if (enemy.hasCollidedWith(pathTiles)) {
+
+                Tile collidedTile = enemy.getCollidedTile();
+                collidedTile.turnRed(redPathSprite, frameCount);
+            }
+            enemy.move();
+        }
+    }
+
+    private void updatePathTiles(List<Enemy> enemiesOnThisLevel,
+        TileList concreteTiles, Tile overlappedTile, Tile newPath) {
+        
+        if (newPath != null && !player.isOverlapping(grassTiles))
+            pathTiles.add(newPath);
+        
+        if (pathTiles.isClosedOff(grassTiles, concreteTiles)) {
+            
+            player.stop();
+            pathTiles.fill(grassTiles, concreteTiles, enemiesOnThisLevel);
+        }
+        if (player.isOverlapping(concreteTiles) ||
+            (player.isOverlapping(grassTiles) &&
+            overlappedTile != null))
+            
+            grassTiles.convertToFillTiles(pathTiles);
+        
+        grassTiles.removeFloatingTiles();
+        pathTiles.propagateRedPaths(redPathSprite, frameCount);
     }
 
     public static void main(String[] args) {

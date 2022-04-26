@@ -871,3 +871,395 @@ VERSION 2:
 
             fillInDirection(secondScan, fillTiles, Direction.LEFT);
     }
+
+    
+    private boolean updateCollisionWithConcrete(Map<Direction,Tile> boundTiles,
+        Tile currentTile, TileList concreteTiles, TileList adjacentTiles) {
+        
+        Tile first = adjacentTiles.get(0);
+        Tile second = adjacentTiles.get(1);
+        Tile third = adjacentTiles.get(2);
+        Tile fourth = adjacentTiles.get(3);
+
+        boolean collidedWithConcrete = false;
+
+        if (concreteTiles.contains(first)) {
+
+            boundTiles.replace(first.getOrientation(), currentTile);
+            collidedWithConcrete = true;
+        }
+        if (concreteTiles.contains(second)) {
+
+            boundTiles.replace(second.getOrientation(), currentTile);
+            collidedWithConcrete = true;
+        }
+        if (concreteTiles.contains(third)) {
+
+            boundTiles.replace(third.getOrientation(), currentTile);
+            collidedWithConcrete = true;
+        }
+        if (concreteTiles.contains(fourth)) {
+
+            boundTiles.replace(fourth.getOrientation(), currentTile);
+            collidedWithConcrete = true;
+        }
+        return collidedWithConcrete;
+    }
+
+    private TileList updateParameters(boolean collidedWithConcrete,
+        boolean reachedLimit, TileList parameters, TileList adjacentTiles) {
+
+        Tile start = parameters.get(0);
+        Tile end = parameters.get(1);
+        Tile currentTile = parameters.get(2);
+        
+        if (!reachedLimit && (collidedWithConcrete ||
+            adjacentTiles.contains(end))) {
+
+            start = tiles.get(tiles.size() - 1);
+            end = tiles.get(0);
+            currentTile = start;
+        }
+        return new TileList(new Tile[] {start, end, currentTile});
+    }
+
+    private boolean[] updateParameters(boolean collidedWithConcrete,
+        boolean reachedLimit, Tile end, TileList adjacentTiles) {
+        
+        if (!reachedLimit && (collidedWithConcrete ||
+            adjacentTiles.contains(end))) {
+
+            reachedLimit = true;
+            collidedWithConcrete = false;
+        }
+        return new boolean[] {reachedLimit, collidedWithConcrete};
+    }
+
+    
+    private Tile updateCurrentTile(Tile currentTile, TileList fillTiles, TileList concreteTiles,
+        TileList adjacentTiles, Direction previousDirection) {
+        
+        for (Tile tile : adjacentTiles.toArray()) {
+
+            if (fillTiles.get(tile) != null &&
+                fillTiles.get(tile).getOrientation() != Direction.NONE &&
+                previousDirection != tile.getOppositeOrientation()) {
+            
+                currentTile = fillTiles.get(tile);
+                break;
+            }
+        }
+        for (Tile tile : adjacentTiles.toArray()) {
+
+            if (concreteTiles.get(tile) != null &&
+                previousDirection != tile.getOppositeOrientation())
+                
+                currentTile = concreteTiles.get(tile);
+        }
+        return currentTile;
+    }
+
+    private Direction updatePreviousDirection(TileList fillTiles,
+        TileList adjacentTiles, Direction previousDirection) {
+        
+        Tile first = adjacentTiles.get(0);
+        Tile second = adjacentTiles.get(1);
+        Tile third = adjacentTiles.get(2);
+        Tile fourth = adjacentTiles.get(3);
+
+        if (fillTiles.get(first) != null &&
+            fillTiles.get(first).getOrientation() != Direction.NONE &&
+            previousDirection != first.getOppositeOrientation()) {
+            
+            previousDirection = first.getOrientation();
+        }
+        else if (fillTiles.get(second) != null &&
+            fillTiles.get(second).getOrientation() != Direction.NONE &&
+            previousDirection != second.getOppositeOrientation()) {
+            
+            previousDirection = second.getOrientation();
+        }
+        else if (fillTiles.get(third) != null &&
+            fillTiles.get(third).getOrientation() != Direction.NONE &&
+            previousDirection != third.getOppositeOrientation()) {
+            
+            previousDirection = third.getOrientation();
+        }
+        else if (fillTiles.get(fourth) != null &&
+            fillTiles.get(fourth).getOrientation() != Direction.NONE &&
+            previousDirection != fourth.getOppositeOrientation()) {
+            
+            previousDirection = fourth.getOrientation();
+        }
+        return previousDirection;
+    }
+
+    private int[][] getPathBounds() {
+
+        int xUpper = tiles.get(0).getX();
+        int xLower = tiles.get(0).getX();
+        int yUpper = tiles.get(0).getY();
+        int yLower = tiles.get(0).getY();
+
+        for (Tile tile : tiles) {
+
+            if (tile.getX() < xUpper)
+                xUpper = tile.getX();
+            else if (tile.getX() > xLower)
+                xLower = tile.getX();
+
+            if (tile.getY() < yUpper)
+                yUpper = tile.getY();
+            else if (tile.getY() > yLower)
+                yLower = tile.getY();
+        }
+        return new int[][] {{xUpper, xLower}, {yUpper, yLower}};
+    }
+
+    private Tile updateCurrentTile(Tile currentTile, TileList fillTiles,
+        TileList adjacentTiles, Direction previousDirection) {
+        
+        for (Tile tile : adjacentTiles.toArray()) {
+
+            if (fillTiles.get(tile) != null &&
+                fillTiles.get(tile).getOrientation() != Direction.NONE &&
+                previousDirection != tile.getOppositeOrientation()) {
+            
+                currentTile = fillTiles.get(tile);
+                break;
+            }
+        }
+        return currentTile;
+    }
+
+    private Direction updatePreviousDirection(TileList fillTiles,
+        TileList adjacentTiles, Direction previousDirection) {
+        
+        Tile first = adjacentTiles.get(0);
+        Tile second = adjacentTiles.get(1);
+        Tile third = adjacentTiles.get(2);
+        Tile fourth = adjacentTiles.get(3);
+
+        if (fillTiles.get(first) != null &&
+            fillTiles.get(first).getOrientation() != Direction.NONE &&
+            previousDirection != first.getOppositeOrientation()) {
+            
+            previousDirection = first.getOrientation();
+        }
+        else if (fillTiles.get(second) != null &&
+            fillTiles.get(second).getOrientation() != Direction.NONE &&
+            previousDirection != second.getOppositeOrientation()) {
+            
+            previousDirection = second.getOrientation();
+        }
+        else if (fillTiles.get(third) != null &&
+            fillTiles.get(third).getOrientation() != Direction.NONE &&
+            previousDirection != third.getOppositeOrientation()) {
+            
+            previousDirection = third.getOrientation();
+        }
+        else if (fillTiles.get(fourth) != null &&
+            fillTiles.get(fourth).getOrientation() != Direction.NONE &&
+            previousDirection != fourth.getOppositeOrientation()) {
+            
+            previousDirection = fourth.getOrientation();
+        }
+        return previousDirection;
+    }
+
+    private boolean updateCollisionWithConcrete(TileList concreteTiles,
+        TileList adjacentTiles) {
+
+        boolean collidedWithConcrete = false;
+        
+        for (Tile tile : adjacentTiles.toArray()) {
+
+            if (concreteTiles.contains(tile)) {
+
+                collidedWithConcrete = true;
+                break;
+            }
+        }
+        return collidedWithConcrete;
+    }
+
+    private TileList updateParameters(boolean collidedWithConcrete,
+        boolean reachedLimit, TileList parameters, TileList adjacentTiles) {
+
+        Tile start = parameters.get(0);
+        Tile end = parameters.get(1);
+        Tile currentTile = parameters.get(2);
+        
+        if (!reachedLimit && (collidedWithConcrete ||
+            adjacentTiles.contains(end))) {
+
+            start = tiles.get(tiles.size() - 1);
+            end = tiles.get(0);
+            currentTile = start;
+        }
+        return new TileList(new Tile[] {start, end, currentTile});
+    }
+
+    private boolean[] updateParameters(boolean collidedWithConcrete,
+        boolean reachedLimit, Tile end, TileList adjacentTiles) {
+        
+        if (!reachedLimit && (collidedWithConcrete ||
+            adjacentTiles.contains(end))) {
+
+            reachedLimit = true;
+            collidedWithConcrete = false;
+        }
+        return new boolean[] {reachedLimit, collidedWithConcrete};
+    }
+
+    public TileList getBounds(TileList fillTiles,
+        TileList concreteTiles, Direction direction) {
+        
+        TileList bounds = new TileList();
+        bounds.addAll(this, false);
+
+        Tile current = tiles.get(0);
+        Tile end = tiles.get(tiles.size() - 1);
+
+        Direction previousDirection = Direction.NONE;
+        boolean collidedWithConcrete = false;
+        boolean reachedLimit = false;
+
+        while (true) {
+
+            System.out.println("Current tile: "+current);
+
+            TileList adjacentTiles = getAdjacentTiles(current, direction);
+
+            if (reachedLimit && (collidedWithConcrete ||
+                adjacentTiles.contains(end))) {
+                
+                System.out.println("Reached the end");
+                break;
+            }
+            for (Tile tile : adjacentTiles.toArray()) {
+
+                if (fillTiles.get(tile) != null &&
+                    fillTiles.get(tile).getOrientation() != Direction.NONE &&
+                    previousDirection != tile.getOppositeOrientation()) {
+                
+                    current = tile;
+                    bounds.add(current, false);
+                    previousDirection = tile.getOrientation();
+                    break;
+                }
+            }
+            for (Tile tile : adjacentTiles.toArray()) {
+
+                if (concreteTiles.contains(tile)) {
+                    
+                    collidedWithConcrete = true;
+                    break;
+                }
+            }
+            if (!reachedLimit && (collidedWithConcrete ||
+                adjacentTiles.contains(end))) {
+
+                current = tiles.get(tiles.size() - 1);
+                end = tiles.get(0);
+                reachedLimit = true;
+                collidedWithConcrete = false;
+            }
+        }
+        return bounds;
+    }
+
+    private TileList getAdjacentTiles(Tile currentTile, Direction direction) {
+
+        Tile first = currentTile.getAdjacentTile(direction.flip());
+        Tile second = currentTile.getAdjacentTile(first.getOppositeOrientation());
+        Tile third = currentTile.getAdjacentTile(second.getPerpendicularOrientation());
+        Tile fourth = currentTile.getAdjacentTile(first.getPerpendicularOrientation());
+
+        return new TileList(new Tile[] {first, second, third, fourth});
+    }
+
+    private void fillForOppositeOrientiation(TileList fillTiles,
+        TileList concreteTiles, Tile headTile, Tile tailTile, List<Enemy> enemies) {
+
+        TileList scan1 = new TileList(fillTiles.getTileSprite(),
+            fillTiles.getTileName());
+        TileList scan2 = new TileList(fillTiles.getTileSprite(),
+            fillTiles.getTileName());
+        TileList scan3 = new TileList(fillTiles.getTileSprite(),
+            fillTiles.getTileName());
+
+        TileList bounds1 = getBounds(fillTiles, concreteTiles,
+            headTile.getOrientation());
+        // int[][] bounds2 = getBounds(fillTiles, concreteTiles,
+        //     headTile.getPerpendicularOrientation());
+        // int[][] bounds3 = getBounds(fillTiles, concreteTiles,
+        //     tailTile.getPerpendicularOrientation());
+        System.out.println(bounds1);
+
+        // System.out.printf("%s: [%d,%d],[%d,%d]%n", headTile.getOrientation(), bounds1[0][0], bounds1[0][1], bounds1[1][0], bounds1[1][1]);
+        // System.out.printf("%s: [%d,%d],[%d,%d]%n", headTile.getPerpendicularOrientation(), bounds2[0][0], bounds2[0][1], bounds2[1][0], bounds2[1][1]);
+        // System.out.printf("%s: [%d,%d],[%d,%d]%n", tailTile.getPerpendicularOrientation(), bounds3[0][0], bounds3[0][1], bounds3[1][0], bounds3[1][1]);
+
+        // fillInDirection(scan1, fillTiles, bounds1,
+        //     headTile.getOrientation());
+        // fillInDirection(scan2, fillTiles, bounds2,
+        //     headTile.getPerpendicularOrientation());
+        // fillInDirection(scan3, fillTiles, bounds3,
+        //     tailTile.getPerpendicularOrientation());
+
+        TileList defaultScan = new TileList();
+        
+        for (Tile tile : scan1.toArray()) {
+
+            if (scan2.contains(tile) && scan3.contains(tile))
+                defaultScan.add(tile, false);
+        }
+        for (Enemy enemy : enemies) {
+
+            if (enemy.isInsideRegion(defaultScan)) {
+                defaultScan.hide();
+            }
+        }
+        fillTiles.addAll(defaultScan, isOverriding);
+    }
+
+    private void fillForPerpendicularOrientiation(TileList fillTiles,
+        TileList concreteTiles, Tile headTile, Tile tailTile, List<Enemy> enemies) {
+
+        TileList firstScan = new TileList(fillTiles.getTileSprite(),
+            fillTiles.getTileName());
+        TileList secondScan = new TileList(fillTiles.getTileSprite(),
+            fillTiles.getTileName());
+
+        TileList firstBounds = getBounds(fillTiles, concreteTiles,
+            headTile.getOrientation());
+        // int[][] secondBounds = getBounds(fillTiles, concreteTiles,
+        //     tailTile.getOppositeOrientation());
+        System.out.println(firstBounds);
+
+        // System.out.printf("%s: [%d,%d],[%d,%d]%n", headTile.getOrientation(), firstBounds[0][0], firstBounds[0][1], firstBounds[1][0], firstBounds[1][1]);
+        // System.out.printf("%s: [%d,%d],[%d,%d]%n", tailTile.getOppositeOrientation(), secondBounds[0][0], secondBounds[0][1], secondBounds[1][0], secondBounds[1][1]);
+
+        // fillInDirection(firstScan, fillTiles, firstBounds,
+        //     headTile.getOrientation());
+        // fillInDirection(secondScan, fillTiles, secondBounds,
+        //     tailTile.getOppositeOrientation());
+
+        TileList scanTiles = new TileList();
+
+        for (Tile tile : firstScan.toArray()) {
+
+            if (secondScan.contains(tile))
+                scanTiles.add(tile, false);
+        }
+        for (Enemy enemy : enemies) {
+
+            if (enemy.isInsideRegion(scanTiles)) {
+                scanTiles.hide();
+            }
+        }
+        fillTiles.addAll(scanTiles, isOverriding);
+    }
+
+}

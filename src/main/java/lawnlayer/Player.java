@@ -2,7 +2,6 @@ package lawnlayer;
 
 import java.util.ArrayList;
 
-// import org.checkerframework.checker.units.qual.A;
 import processing.core.PImage;
 
 public class Player extends Entity {
@@ -15,9 +14,9 @@ public class Player extends Entity {
     private boolean movingTowardsTile;
     private boolean onSoil;
 
-    public Player(PImage sprite, int x, int y) {
+    public Player(PImage sprite) {
 
-        super(sprite, x, y);
+        super(sprite, Info.SPAWNPOINT.get(0), Info.SPAWNPOINT.get(1));
         name = Info.PLAYER;
 
         currentDirection = Direction.NONE;
@@ -30,9 +29,9 @@ public class Player extends Entity {
         onSoil = false;
     }
 
-    public Player(PImage sprite) {
+    public Player(PImage sprite, int x, int y) {
 
-        super(sprite, Info.SPAWNPOINT.get(0), Info.SPAWNPOINT.get(1));
+        super(sprite, x, y);
         name = Info.PLAYER;
 
         currentDirection = Direction.NONE;
@@ -139,7 +138,7 @@ public class Player extends Entity {
 
     @Override
     public void move() {
-        /*
+        /**
          * If the ball is on soil or not being moved towards a
          * tile, continuously move the ball in the direction
          * per user's keyboard input.
@@ -173,7 +172,7 @@ public class Player extends Entity {
             case NONE:
                 break;
         }
-        checkOffMapMovement();
+        checkForOffMapMovement();
     }
 
     public Tile createPath(PImage greenPathSprite) {
@@ -189,39 +188,39 @@ public class Player extends Entity {
 
     private boolean isOnTileSpace() {
 
-        return (x % size == 0 && y % size == 0);
+        return (x % size == 0 && y % size == 0 && y >= Info.TOPBAR);
     }
 
-    private void moveUp(Tile targetTile) {
+    private void moveUp(Tile positionTile) {
 
         if (onSoil && !movingTowardsTile)
             y -= speed;
         else
-            moveUpToNearestTile(targetTile);
+            moveUpToNearestTile(positionTile);
     }
 
-    private void moveDown(Tile targetTile) {
+    private void moveDown(Tile positionTile) {
 
         if (onSoil && !movingTowardsTile)
             y += speed;
         else
-            moveDownToNearestTile(targetTile);
+            moveDownToNearestTile(positionTile);
     }
 
-    private void moveLeft(Tile targetTile) {
+    private void moveLeft(Tile positionTile) {
 
         if (onSoil && !movingTowardsTile)
             x -= speed;
         else
-            moveLeftToNearestTile(targetTile);
+            moveLeftToNearestTile(positionTile);
     }
 
-    private void moveRight(Tile targetTile) {
+    private void moveRight(Tile positionTile) {
 
         if (onSoil && !movingTowardsTile)
             x += speed;
         else
-            moveRightToNearestTile(targetTile);
+            moveRightToNearestTile(positionTile);
     }
 
     private void stopMoving() {
@@ -316,20 +315,27 @@ public class Player extends Entity {
     }
     
     @Override
-    protected void checkOffMapMovement() {
+    protected void checkForOffMapMovement() {
 
         int maxWidth = (Info.WIDTH - Info.SPRITESIZE);
         int maxHeight = (Info.HEIGHT - Info.SPRITESIZE);
 
-        if (x < 0)
+        if (x < 0) {
             x = 0;
-        else if (x > maxWidth)
+            currentDirection = Direction.NONE;
+        }
+        else if (x > maxWidth) {
             x = maxWidth;
-        
-        if (y < 0)
-            y = 0;
-        else if (y > maxHeight)
+            currentDirection = Direction.NONE;
+        }
+        if (y < Info.TOPBAR) {
+            y = Info.TOPBAR;
+            currentDirection = Direction.NONE;
+        }
+        else if (y > maxHeight) {
             y = maxHeight;
+            currentDirection = Direction.NONE;
+        }
     }
 
 }

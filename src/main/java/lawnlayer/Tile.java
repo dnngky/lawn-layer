@@ -5,49 +5,41 @@ import processing.core.PImage;
 public class Tile extends GameObject {
     
     private Direction orientation;
-    private boolean isHidden;
     private boolean isCollided;
     private int frameOfCollision;
+
+    public Tile(int x, int y) {
+
+        super(x, y);
+        this.name = "UnnamedTile";
+
+        orientation = Direction.NONE;
+        isCollided = false;
+        frameOfCollision = 0;
+    }
 
     public Tile(PImage sprite, int x, int y) {
 
         super(sprite, x, y);
+        this.name = "UnnamedTile";
 
         orientation = Direction.NONE;
-        isHidden = false;
         isCollided = false;
         frameOfCollision = 0;
     }
 
     public Tile(PImage sprite, int x, int y, String name) {
 
-        super(sprite, x, y);
-        this.name = name;
+        super(sprite, x, y, name);
 
         orientation = Direction.NONE;
-        isHidden = false;
         isCollided = false;
         frameOfCollision = 0;
-    }
-
-    public void hide() {
-
-        isHidden = true;
-    }
-
-    public void unhide() {
-
-        isHidden = false;
     }
 
     public boolean isCollided() {
 
         return isCollided;
-    }
-
-    public boolean isHidden() {
-
-        return isHidden;
     }
 
     public void setOrientation(Direction orientation) {
@@ -120,14 +112,12 @@ public class Tile extends GameObject {
     
     public boolean isVerticallyAdjacentTo(Tile other) {
 
-        return (Math.abs(y - other.getY()) == size && x == other.getX() &&
-                !other.isHidden());
+        return (Math.abs(y - other.getY()) == size && x == other.getX());
     }
 
     public boolean isHorizontallyAdjacentTo(Tile other) {
 
-        return (Math.abs(x - other.getX()) == size && y == other.getY() &&
-                !other.isHidden());
+        return (Math.abs(x - other.getX()) == size && y == other.getY());
     }
 
     public boolean isVerticallyAdjacentTo(TileList otherTiles) {
@@ -191,7 +181,7 @@ public class Tile extends GameObject {
         return (orientation == other.getOrientation());
     }
     
-    public boolean isPerpendicularTo(Tile other) {
+    public boolean isNormalTo(Tile other) {
 
         if (orientation == Direction.UP ||
             orientation == Direction.DOWN)
@@ -245,7 +235,7 @@ public class Tile extends GameObject {
         switch (direction) {
 
             case UP:
-                condition = y > 0;
+                condition = y > Info.TOPBAR;
                 incr = -size;
                 break;
 
@@ -255,7 +245,7 @@ public class Tile extends GameObject {
                 break;
 
             case LEFT:
-                condition = x > 0;
+                condition = x > Info.TOPBAR;
                 incr = -size;
                 break;
 
@@ -289,6 +279,12 @@ public class Tile extends GameObject {
         return false;
     }
 
+    public boolean isOutOfBounds() {
+
+        return (x < 0 || x > (Info.WIDTH - size) ||
+                y < Info.TOPBAR || y > (Info.HEIGHT - size));
+    }
+
     public void turnRed(PImage redPathSprite, int frameCount) {
 
         sprite = redPathSprite;
@@ -301,11 +297,11 @@ public class Tile extends GameObject {
         switch (direction) {
 
             case UP:
-                return n > 0;
+                return n > Info.TOPBAR;
             case DOWN:
                 return n < (Info.HEIGHT - size);
             case LEFT:
-                return n > 0;
+                return n > Info.TOPBAR;
             case RIGHT:
                 return n < (Info.WIDTH - size);
             default:
