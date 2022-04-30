@@ -38,20 +38,4 @@ public enum Movement {
         }
     }
 
-    public Movement flipDiagonally() {
-
-        switch (this) {
-
-            case UPLEFT:
-                return DOWNRIGHT;
-            case UPRIGHT:
-                return DOWNLEFT;
-            case DOWNLEFT:
-                return UPRIGHT;
-            case DOWNRIGHT:
-                return UPLEFT;
-            default:
-                return null;
-        }
-    }
 }

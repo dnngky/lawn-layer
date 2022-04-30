@@ -1,107 +1,198 @@
 package lawnlayer;
 
 import java.util.Random;
+
+import lawnlayer.Info.Name;
 import processing.core.PImage;
 import processing.core.PApplet;
 
+/**
+ * An abstract class through which all objects in the game inherit from.
+ */
 public abstract class GameObject {
     
-    protected String name;
+    protected static final int SIZE = Info.SPRITESIZE;
+    
+    protected Name name;
     protected PImage sprite;
-    protected int size;
     protected int x;
     protected int y;
 
     protected Random rand = new Random();
 
-    protected GameObject(PImage sprite, String name) {
-        
-        this.name = name;
-        this.sprite = sprite;
-        size = Info.SPRITESIZE;
+    /**
+     * Initialises a basic GameObject with no sprite nor name. Its
+     * xy-coordinate will be randomised within the map bounds (the width
+     * and height of the map is pre-defined).
+     */
+    protected GameObject() {
+
         randomiseXY();
     }
 
-    protected GameObject(PImage sprite, int x, int y, String name) {
+    /**
+     * Initialises a GameObject with the specified sprite and name. Its
+     * xy-coordinates will be randomised within the map bounds (the width
+     * and height of the map is pre-defined).
+     * 
+     * @param sprite - the PImage sprite of this GameObject
+     * @param name - the name of this GameObject
+     */
+    protected GameObject(PImage sprite, Name name) {
+        
+        this.name = name;
+        this.sprite = sprite;
+        randomiseXY();
+    }
+
+    /**
+     * Initialises a GameObject with the specified sprite, xy-coordinates,
+     * and name.
+     * 
+     * @param sprite - the PImage sprite of this GameObject
+     * @param x - the x-coordinate of this GameObject
+     * @param y - the y-coordinate of this GameObject
+     * @param name - the name of this GameObject
+     */
+    protected GameObject(PImage sprite, int x, int y, Name name) {
 
         this.name = name;
         this.sprite = sprite;
-        size = Info.SPRITESIZE;
         this.x = x;
         this.y = y;
     }
 
-    protected GameObject(PImage sprite, String location, String name) {
+    /**
+     * Initialises a GameObject with the specified sprite, tile location,
+     * and name. The xy-coordinates of this GameObject will be randomised
+     * within the given tile (the size of the tile is pre-defined).
+     * 
+     * @param sprite - the PImage sprite of this GameObject
+     * @param location - the tile location of this GameObject
+     * @param name - the name of this GameObject
+     */
+    protected GameObject(PImage sprite, String location, Name name) {
 
         this.name = name;
         this.sprite = sprite;
-        size = Info.SPRITESIZE;
 
         int row = Integer.parseInt(location.split(",")[0]);
         int col = Integer.parseInt(location.split(",")[1]);
 
-        int xMax = row * size;
-        int xMin = xMax - size;
-        int yMax = Info.TOPBAR + (col * size);
-        int yMin = yMax - size;
+        int xMax = row * SIZE;
+        int xMin = xMax - SIZE;
+        int yMax = Info.TOPBAR + (col * SIZE);
+        int yMin = yMax - SIZE;
 
         x = xMin + rand.nextInt(xMax - xMin);
         y = yMin + rand.nextInt(yMax - yMin);
     }
 
+    /**
+     * Draws this GameObject.
+     * 
+     * @param app - the PApplet instance to be drawn in
+     */
     public void draw(PApplet app) {
 
         app.image(sprite, x, y);
     }
 
+    /**
+     * Retrieves the x-coordinate of the centre of this GameObject.
+     * 
+     * @return the central x-coordinate of this GameObject
+     */
     public int getMidX() {
         
-        return x + (size / 2);
+        return x + (SIZE / 2);
     }
 
+    /**
+     * Retrieves the y-coordinate of the centre of this GameObject.
+     * 
+     * @return the central y-coordinate of this GameObject
+     */
     public int getMidY() {
         
-        return y + (size / 2);
+        return y + (SIZE / 2);
     }
 
+    /**
+     * Retrieves the x-coordinate of this GameObject.
+     * 
+     * @return the x-coordinate of this GameObject
+     */
     public int getX() {
         
         return x;
     }
 
+    /**
+     * Retrieves the y-coordinate of this GameObject.
+     * 
+     * @return the y-coordinate of this GameObject
+     */
     public int getY() {
         
         return y;
     }
 
-    public String getName() {
+    /**
+     * Retrieves the name of this GameObject.
+     * 
+     * @return the name of this GameObject
+     */
+    public Name getName() {
         
         return name;
     }
 
+    /**
+     * Retrieves the sprite of this GameObject.
+     * 
+     * @return the PImage sprite of this GameObject
+     */
     public PImage getSprite() {
         
         return sprite;
     }
 
+    /**
+     * Randomises this GameObject's xy-coordinates within the map bounds
+     * (The width and height of the map is pre-defined).
+     */
     protected void randomiseXY() {
-        /**
-         * Randomises x and y values of GameObject.
-         */
-        x = rand.nextInt(Info.WIDTH - 2*size + 1);
-        y = Info.TOPBAR + rand.nextInt(Info.HEIGHT - 2*size + 1);
+
+        x = SIZE + rand.nextInt(Info.WIDTH - 2*SIZE);
+        y = (Info.TOPBAR + SIZE) + rand.nextInt(Info.HEIGHT - 2*SIZE);
     }
 
-    public void setName(String name) {
+    /**
+     * Sets the name of this GameObject to the specified name.
+     * 
+     * @param name - the name to be set
+     */
+    public void setName(Name name) {
 
         this.name = name;
     }
 
+    /**
+     * Sets the sprite of this GameObject to the specified sprite.
+     * 
+     * @param sprite - the PImage sprite to be set
+     */
     public void setSprite(PImage sprite) {
 
         this.sprite = sprite;
     }
 
+    /**
+     * Sets the string representation of this GameObject.
+     * 
+     * @see Object#toString()
+     */
     @Override
     public String toString() {
         

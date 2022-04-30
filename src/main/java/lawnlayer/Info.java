@@ -1,36 +1,48 @@
 package lawnlayer;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
+/**
+ * A constants-only class containing the information which are used across
+ * multiple classes in the 'lawnlayer' package. As its sole purpose is an
+ * information container, the class along with its attributes have been
+ * marked final to prevent inheritence and modifications.
+ */
 public final class Info {
 
-    // Game setup
+    /**
+     * The width of the map (pixels).
+     */
     public static final int WIDTH = 1280;
+    /**
+     * The height of the map (pixels).
+     */
     public static final int HEIGHT = 720;
+    /**
+     * The height of the top bar (pixels).
+     */
     public static final int TOPBAR = 80;
+    /**
+     * The number of frames per second.
+     */
     public static final int FPS = 60;
-    public static final int ENDGAMESCREENDELAY = 3;
-
-    // Entities info
+    /**
+     * The size of a square sprite (pixels).
+     */
     public static final int SPRITESIZE = 20;
-    public static final int SPEED = 2;
-    public static final int FPP = 3; // Frames per (red path) propagation
-    public static final int MAXQUEUESIZE = 2; // Number of delayed key presses
-    public static final List<Integer> SPAWNPOINT =
-        Collections.unmodifiableList(Arrays.asList(0, 0));
+    /**
+     * The maximum delay interval between each power up's spawn.
+     */
+    public static final int SPAWNDELAY = 10;
 
-    // Names
-    public static final String CONCRETE = "Concrete";
-    public static final String GRASS = "Grass";
-    public static final String PATH = "Path";
-    public static final String PLAYER = "Player";
-    public static final String BEETLE = "Beetle";
-    public static final String WORM = "Worm";
+    /**
+     * An enum containing the pre-defined names of the GameObjects (seconds).
+     */
+    public enum Name {
 
-    // Restricts instantiation by other classes
-    private Info() {
+        CONCRETE, GRASS, PATH, PLAYER, BEETLE, WORM, BOOST, FREEZE, UNNAMED;
     }
 
+    // Explicitly defining a private constructor to prevent instantiation
+    private Info() {
+    }
+    
 }

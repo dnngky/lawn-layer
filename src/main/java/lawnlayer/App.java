@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import lawnlayer.Info.Name;
 import processing.core.PApplet;
 import processing.core.PImage;
 import processing.data.JSONObject;
@@ -15,39 +16,62 @@ import processing.data.JSONArray;
 import processing.core.PFont;
 
 public class App extends PApplet {
+    
+    /**
+     * Duration of the display screen (seconds), which includes the
+     * start, end, and level screen.
+     */
+    public static final int DISPLAYSCREENDURATION = 3;
 
     public final String configPath;
-    private PFont font;
+    
+    // Font and sprite images
 
+    private PFont font;
     private PImage soil;
     private PImage concreteSprite;
     private PImage greenPathSprite;
     private PImage redPathSprite;
     private PImage wormSprite;
     private PImage beetleSprite;
+
+    private PImage freezeSprite;
+    private PImage boostSprite;
     private PImage heart;
 
-    private Map<Integer, String> outlays;
-    private Map<Integer, TileList> concretes;
-    private Map<Integer, List<Enemy>> enemies;
-    private Map<Integer, Integer> fillables;
-    private Map<Integer, Float> goals;
+    // Information for all levels
+
+    private Map<Integer,String> outlays;
+    private Map<Integer,List<Enemy>> enemies;
+    private Map<Integer,Float> goals;
     private int lives;
 
-    private TileList pathTiles;
-    private TileList grassTiles;
-    private TileList borderTiles;
+    // Level-specific information
 
-    private Player player;
     private int currentLevel;
-    private int gameOverTime;
+    private int displayScreenTime;
+
+    private int numOfFillables;
+    private double fillGoal;
+
+    private TileList borderTiles;
+    private TileList concreteTiles;
+    private TileList dirtTiles;
+    private TileList grassTiles;
+    private TileList pathTiles;
+
+    private List<Enemy> levelEnemies;
+    private Player player;
+
+    private Boost boost;
+    private Freeze freeze;
 
     public App() {
 
         this.configPath = "config.json";
     }
 
-    /*
+    /**
      * Initialises the setting of the window size.
      */
     @Override
@@ -56,7 +80,7 @@ public class App extends PApplet {
         size(Info.WIDTH, Info.HEIGHT);
     }
 
-    /*
+    /**
      * Loads all resources such as images. Initialise the elements such as the
      * player, enemies and map elements.
      */
@@ -67,108 +91,70 @@ public class App extends PApplet {
 
         // Load images and fonts during setup
 
+        font = createFont(this.getClass().getResource("upheavtt.ttf").getPath(), 50, false);
+
         soil = loadImage(this.getClass().getResource("background4.png").getPath());
         concreteSprite = loadImage(this.getClass().getResource("concrete_tile.png").getPath());
         greenPathSprite = loadImage(this.getClass().getResource("green_path.png").getPath());
         redPathSprite = loadImage(this.getClass().getResource("red_path.png").getPath());
+
         wormSprite = loadImage(this.getClass().getResource("worm.png").getPath());
         beetleSprite = loadImage(this.getClass().getResource("beetle.png").getPath());
+
         heart = loadImage(this.getClass().getResource("heart_smaller.png").getPath());
+        freezeSprite = loadImage(this.getClass().getResource("freeze_small.png").getPath());
+        boostSprite = loadImage(this.getClass().getResource("boost_small.png").getPath());
 
         PImage grassSprite = loadImage(this.getClass().getResource("grass_tile1.png").getPath());
         PImage ballSprite = loadImage(this.getClass().getResource("ball.png").getPath());
 
-        font = createFont(this.getClass().getResource("upheavtt.ttf").getPath(), 50, false);
-
         // Initialise config information containers
 
         outlays = new HashMap<>();
-        concretes = new HashMap<>();
-        fillables = new HashMap<>();
         enemies = new HashMap<>();
         goals = new HashMap<>();
 
         // Initialise tile containers
 
-        pathTiles = new TileList(greenPathSprite, Info.PATH);
-        grassTiles = new TileList(grassSprite, Info.GRASS);
-        borderTiles = new TileList(grassSprite, Info.GRASS);
+        borderTiles = new TileList(grassSprite, Name.GRASS);
+        concreteTiles = new TileList(concreteSprite, Name.CONCRETE);
+        dirtTiles = new TileList();
+        grassTiles = new TileList(grassSprite, Name.GRASS);
+        pathTiles = new TileList(greenPathSprite, Name.PATH);
 
         // Load JSON file
 
         loadConfigFile();
 
-        // Draw concrete tiles and calculate fillable tiles for each level
+        // Initialise player and power ups
+        
+        player = Player.createPlayer(ballSprite);
 
-        outlays.forEach((level, filename) ->
-            concretes.put(level, drawConcretes(filename)));
-        outlays.forEach((level, filename) ->
-            fillables.put(level, calculateFillableTiles(filename)));
-
-        // Initialise player and level
-
-        player = new Player(ballSprite);
-        currentLevel = 1;
+        currentLevel = 0;
+        fillGoal = 0.0;
     }
 
-    /*
+    /**
      * Draw all elements in the game by current frame.
      */
     @Override
     public void draw() {
 
+        // long start = System.currentTimeMillis();
+
         background(soil);
         textFont(font);
 
-        int fillableTiles;
-        TileList concreteTiles;
-        List<Enemy> enemiesOnThisLevel;
+        double percentageFilled = getFilledPercentage();
+        
+        if (fillGoal != 0.0) {
 
-        double percentageFilled;
-        double fillGoal;
+            displayTopBarInfo(percentageFilled);
 
-        try {
-
-            fillableTiles = fillables.get(currentLevel);
-            concreteTiles = concretes.get(currentLevel);
-            enemiesOnThisLevel = enemies.get(currentLevel);
-
-            percentageFilled = getFilledPercentage(borderTiles, grassTiles,
-                fillableTiles);
-            fillGoal = goals.get(currentLevel);
-        } catch (NullPointerException e) {
-
-            concreteTiles = new TileList();
-            enemiesOnThisLevel = new ArrayList<>();
-
-            percentageFilled = -1;
-            fillGoal = -1;
-        }
-        if (gameOverTime == 0) {
-
-            fill(0);
-            textAlign(RIGHT, CENTER);
-            text((int) (percentageFilled * 100) + "% | " +
-                    (int) (fillGoal * 100) + "%", 1250, 35);
-
-            textAlign(CENTER, CENTER);
-            text("Level " + currentLevel, 640, 35);
-
-            int x = 30;
-            for (int n = 0; n < lives; n++) {
-                image(heart, x, 25);
-                x += 50;
-            }
-            Tile overlappedTile = player.getOverlappedTile(borderTiles,
-                    concreteTiles, grassTiles, pathTiles);
-
-            Tile newPath = player.createPath(greenPathSprite);
-
-            updatePlayer(enemiesOnThisLevel, pathTiles, overlappedTile);
-            updateEnemies(enemiesOnThisLevel, concreteTiles, grassTiles,
-                    pathTiles);
-            updatePathTiles(enemiesOnThisLevel, concreteTiles, overlappedTile,
-                    newPath);
+            updatePlayer();
+            updateEnemies();
+            updatePathTiles();
+            updatePowerUps();
 
             concreteTiles.drawTiles(this);
             borderTiles.drawTiles(this);
@@ -176,56 +162,46 @@ public class App extends PApplet {
             pathTiles.drawTiles(this);
 
             player.draw(this);
-
-            for (Enemy enemy : enemiesOnThisLevel)
+            for (Enemy enemy : levelEnemies)
                 enemy.draw(this);
+            boost.draw(this);
+            freeze.draw(this);
         }
-        if (percentageFilled >= fillGoal) {
+        if (fillGoal == 0 ||
+            percentageFilled >= fillGoal) {
 
-            borderTiles.clear();
-            grassTiles.clear();
-            pathTiles.clear();
-            player.respawn();
-
-            currentLevel++;
+            if (displayScreenTime == 0)
+                currentLevel++;
+            displayScreen("LEVEL");
         }
-        if (lives == 0) {
+        if (lives == 0)
+            displayScreen("LOSE");
+        
+        if (currentLevel > goals.size())
+            displayScreen("WIN");
+        
+        if (displayScreenTime > 0 &&
+            frameCount - displayScreenTime ==
+                Info.FPS * DISPLAYSCREENDURATION) {
+            
+            clearAllTiles();
 
-            concreteTiles.clear();
-            borderTiles.clear();
-            grassTiles.clear();
-            pathTiles.clear();
-
-            background(0);
-            fill(255);
-            textAlign(CENTER, CENTER);
-            text("You lose D:", 640, 360);
-
-            if (gameOverTime == 0)
-                gameOverTime = frameCount;
+            if (lives == 0 || currentLevel > goals.size()) {
+                exit();
+            }
+            else {
+                initialiseLevel(currentLevel);
+                player.respawn();
+                displayScreenTime = 0;
+            }
         }
-        if (currentLevel > goals.size()) {
+        // long end = System.currentTimeMillis();
 
-            concreteTiles.clear();
-            borderTiles.clear();
-            grassTiles.clear();
-            pathTiles.clear();
-
-            background(107, 142, 35);
-            fill(255);
-            textAlign(CENTER, CENTER);
-            text("You win :D", 640, 360);
-
-            if (gameOverTime == 0)
-                gameOverTime = frameCount;
-        }
-        if (gameOverTime > 0 &&
-                frameCount - gameOverTime == Info.FPS * Info.ENDGAMESCREENDELAY)
-            exit();
+        // System.out.printf("Drawing took %d ms%n", (end - start));
     }
 
     /**
-     * Runs when player presses a keyboard key.
+     * Changes ball's direction when player presses a keyboard key
      */
     @Override
     public void keyPressed() {
@@ -244,6 +220,136 @@ public class App extends PApplet {
                 break;
             default:
                 break;
+        }
+    }
+
+    private void clearAllTiles() {
+
+        concreteTiles.clear();
+        borderTiles.clear();
+        dirtTiles.clear();
+        grassTiles.clear();
+        pathTiles.clear();
+    }
+
+    private void displayScreen(String result) {
+
+        if (result.equals("WIN")) {
+
+            background(107, 142, 35);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("You win :D", 640, 360);
+        }
+        if (result.equals("LOSE")) {
+
+            background(0);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("You lose D:", 640, 360);
+        }
+        if (result.equals("LEVEL")) {
+
+            background(205,133,63);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("Level " + currentLevel, 640, 300);
+            
+            image(heart, 570, 340);
+            text("x " + lives, 665, 351);
+        }
+        if (displayScreenTime == 0)
+            displayScreenTime = frameCount;
+    }
+
+    private void displayTopBarInfo(double percentageFilled) {
+
+        fill(0);
+        textAlign(RIGHT, CENTER);
+        text((int) (percentageFilled * 100) + "% | " +
+                (int) (fillGoal * 100) + "%", 1250, 35);
+
+        textAlign(CENTER, CENTER);
+        text("Level " + currentLevel, 640, 35);
+
+        int x = 30;
+        for (int n = 0; n < lives; n++) {
+            image(heart, x, 25);
+            x += 50;
+        }
+    }
+
+    private TileList fillFrom(String filename, char marker) {
+
+        File outlayFile = new File(filename);
+        TileList tiles = new TileList(concreteSprite, Name.CONCRETE);
+
+        try {
+            Scanner scan = new Scanner(outlayFile);
+            int y = 80;
+
+            while (scan.hasNextLine()) {
+
+                String row = scan.nextLine();
+
+                for (int j = 0; j < row.length(); j++) {
+
+                    char c = row.charAt(j);
+                    int x = j * Info.SPRITESIZE;
+
+                    if (c == marker) {
+                        Tile concreteTile =
+                            new Tile(concreteSprite, x, y, Name.CONCRETE);
+                        tiles.add(concreteTile);
+                    }
+                }
+                y += Info.SPRITESIZE;
+            }
+            scan.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return tiles;
+    }
+
+    private double getFilledPercentage() {
+
+        return ((double) (borderTiles.size() + grassTiles.size()) /
+                numOfFillables);
+    }
+
+    private void initialiseLevel(int currentLevel) {
+
+        try {
+
+            String currentOutlay = outlays.get(currentLevel);
+            concreteTiles = fillFrom(currentOutlay, 'X');
+            dirtTiles = fillFrom(currentOutlay, ' ');
+
+            numOfFillables = dirtTiles.size();
+            fillGoal = goals.get(currentLevel);
+
+            levelEnemies = enemies.get(currentLevel);
+            for (Enemy enemy : levelEnemies)
+                enemy.checkIfIsStuckInside(concreteTiles);
+
+            Boost.removeSpeedBoost();
+            boost = Boost.createSpeedBoost(boostSprite, Name.BOOST);
+            boost.setStartingFrameCount(frameCount);
+
+            Freeze.removeSpeedBoost();
+            freeze = Freeze.createFreeze(freezeSprite, Name.FREEZE);
+            freeze.setStartingFrameCount(frameCount);
+        }
+        catch (NullPointerException e) {
+
+            concreteTiles = new TileList();
+            dirtTiles = new TileList();
+
+            numOfFillables = 0;
+            fillGoal = 0;
+
+            levelEnemies = new ArrayList<>();
         }
     }
 
@@ -266,14 +372,14 @@ public class App extends PApplet {
                 JSONObject enemy = enemyArray.getJSONObject(j);
 
                 PImage sprite;
-                String type;
+                Name type;
 
                 if (enemy.getInt("type") == 0) {
                     sprite = wormSprite;
-                    type = Info.WORM;
+                    type = Name.WORM;
                 } else {
                     sprite = beetleSprite;
-                    type = Info.BEETLE;
+                    type = Name.BEETLE;
                 }
                 String spawn = enemy.getString("spawn");
 
@@ -289,147 +395,107 @@ public class App extends PApplet {
         lives = values.getInt("lives");
     }
 
-    private TileList drawConcretes(String filename) {
+    private void updateEnemies() {
 
-        File outlayFile = new File(filename);
-        TileList concreteTiles = new TileList();
+        int enemySpeed = levelEnemies.get(0).getSpeed();
 
-        try {
-            Scanner scan = new Scanner(outlayFile);
-            int y = 80;
+        for (int i = 0; i < enemySpeed; i++) {
+        
+            for (Enemy enemy : levelEnemies) {
 
-            while (scan.hasNextLine()) {
+                enemy.checkForCollisionWith(concreteTiles, grassTiles, false);
+                enemy.checkForCollisionWith(pathTiles, grassTiles, false);
+                enemy.checkForCollisionWith(borderTiles, grassTiles, false);
 
-                String row = scan.nextLine();
+                if (enemy.hasCollidedWith(pathTiles)) {
 
-                for (int j = 0; j < row.length(); j++) {
-
-                    char c = row.charAt(j);
-                    int x = j * Info.SPRITESIZE;
-
-                    if (c == 'X') {
-                        Tile concreteTile = new Tile(concreteSprite, x, y, Info.CONCRETE);
-                        concreteTiles.add(concreteTile);
-                    }
+                    Tile collidedTile = enemy.getCollidedTile();
+                    collidedTile.turnRed(redPathSprite, frameCount);
                 }
-                y += Info.SPRITESIZE;
-            }
-            scan.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        return concreteTiles;
-    }
-
-    private int calculateFillableTiles(String filename) {
-
-        File outlayFile = new File(filename);
-        int fillableTiles = 0;
-
-        try {
-            Scanner scan = new Scanner(outlayFile);
-
-            while (scan.hasNextLine()) {
-
-                String row = scan.nextLine();
-
-                for (int j = 0; j < row.length(); j++) {
-
-                    char c = row.charAt(j);
-                    if (c != 'X') {
-                        fillableTiles++;
-                    }
+                if (player.isOverlapping(enemy)) {
+                    
+                    player.respawn();
+                    boost.deactivateOn(player);
+                    freeze.deactivateOn(levelEnemies);
+                    pathTiles.clear();
+                    lives--;
+                    break;
                 }
-            }
-            scan.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        return fillableTiles;
-    }
-
-    public double getFilledPercentage(TileList borderTiles,
-            TileList fillTiles, int fillableTiles) {
-
-        return ((double) (borderTiles.size() + fillTiles.size()) /
-                fillableTiles);
-    }
-
-    private void updatePlayer(List<Enemy> enemiesOnThisLevel,
-            TileList pathTiles, Tile overlappedTile) {
-
-        player.update(overlappedTile);
-        boolean playerHasDied = false;
-
-        if (player.isOverlapping(pathTiles) &&
-                (overlappedTile != pathTiles.get(pathTiles.size() - 1) ||
-                        overlappedTile.isCollided())) {
-
-            playerHasDied = true;
-        }
-        for (Enemy enemy : enemiesOnThisLevel) {
-
-            if (player.isOverlapping(enemy)) {
-                playerHasDied = true;
-                break;
+                enemy.move();
             }
         }
-        if (playerHasDied) {
-
-            player.respawn();
-            pathTiles.clear();
-            lives--;
-        }
-        player.move();
     }
 
-    private void updateEnemies(List<Enemy> enemiesOnThisLevel,
-            TileList concreteTiles, TileList grassTiles, TileList pathTiles) {
+    private void updatePathTiles() {
 
-        for (Enemy enemy : enemiesOnThisLevel) {
+        if (player.isOnSafeTile() &&
+            !pathTiles.isEmpty()) {
 
-            enemy.unstuckIfIsStuckInside(concreteTiles);
-            enemy.unstuckIfIsStuckInside(pathTiles);
-            enemy.unstuckIfIsStuckInside(grassTiles);
-            enemy.unstuckIfIsStuckInside(borderTiles);
-
-            enemy.checkForCollisionWith(concreteTiles, false);
-            enemy.checkForCollisionWith(pathTiles, false);
-            enemy.checkForCollisionWith(borderTiles, false);
-
-            if (enemy.hasCollidedWith(pathTiles)) {
-
-                Tile collidedTile = enemy.getCollidedTile();
-                collidedTile.turnRed(redPathSprite, frameCount);
-            }
-            enemy.move();
+            player.stop();
+            pathTiles.fill(borderTiles, dirtTiles, grassTiles,
+                    concreteTiles, levelEnemies, false);
         }
+        grassTiles.removeFloatingTiles(borderTiles);
+        pathTiles.propagate(redPathSprite, frameCount);
     }
 
-    private void updatePathTiles(List<Enemy> enemiesOnThisLevel,
-            TileList concreteTiles, Tile overlappedTile, Tile newPath) {
+    private void updatePlayer() {
 
-        if (newPath != null &&
+        for (int i = 0; i < player.getSpeed(); i++) {
+
+            Tile newPath = player.createPath(greenPathSprite);
+
+            if (newPath != null &&
                 !player.isOverlapping(concreteTiles) &&
                 !player.isOverlapping(borderTiles) &&
                 !player.isOverlapping(grassTiles))
 
-            pathTiles.add(newPath);
+                pathTiles.add(newPath);
 
-        if (pathTiles.isClosedOffBy(borderTiles, concreteTiles)) {
+            Tile overlappedTile = player.getOverlappedTileFrom(
+                borderTiles, concreteTiles, grassTiles, pathTiles);
 
-            player.stop();
-            pathTiles.fill(borderTiles, grassTiles, concreteTiles,
-                    enemiesOnThisLevel);
+            player.updateStatus(overlappedTile);
+
+            if (player.isOverlapping(pathTiles) &&
+                (overlappedTile != pathTiles.get(pathTiles.size() - 1) ||
+                overlappedTile.isRed())) {
+
+                player.respawn();
+                boost.deactivateOn(player);
+                freeze.deactivateOn(levelEnemies);
+                pathTiles.clear();
+                lives--;
+            }
+            if (player.isOverlapping(boost))
+                boost.activateOn(player, overlappedTile, frameCount);
+            
+            if (player.isOverlapping(freeze))
+                freeze.activateOn(levelEnemies, overlappedTile, frameCount);
+            
+            player.move();
         }
-        if (player.isOverlapping(concreteTiles) ||
-                (player.isOverlapping(borderTiles) &&
-                        overlappedTile != null))
+    }
 
-            borderTiles.convertToFillTiles(pathTiles);
+    private void updatePowerUps() {
 
-        grassTiles.removeFloatingTiles();
-        pathTiles.propagate(redPathSprite, frameCount);
+        if (boost.isTimeToSpawn(frameCount))
+            boost.spawn(dirtTiles, frameCount);
+        
+        if (boost.isTimeToDespawn(frameCount))
+            boost.despawn(frameCount);
+        
+        if (boost.isTimeToDeactivate(frameCount))
+            boost.deactivateOn(player);
+
+        if (freeze.isTimeToSpawn(frameCount))
+            freeze.spawn(dirtTiles, frameCount);
+        
+        if (freeze.isTimeToDespawn(frameCount))
+            freeze.despawn(frameCount);
+
+        if (freeze.isTimeToDeactivate(frameCount))
+            freeze.deactivateOn(levelEnemies);
     }
 
     public static void main(String[] args) {

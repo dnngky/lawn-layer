@@ -26,9 +26,9 @@ public enum Direction {
         switch (this) {
 
             case UP:
-                return Direction.LEFT;
-            case DOWN:
                 return Direction.RIGHT;
+            case DOWN:
+                return Direction.LEFT;
             case LEFT:
                 return Direction.UP;
             case RIGHT:
