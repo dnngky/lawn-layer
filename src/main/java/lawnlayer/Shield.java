@@ -6,33 +6,34 @@ import processing.core.PImage;
 
 /**
  * A subclass of GameObject and implementation of PowerUp.
- * This power up increases the Player's speed for a brief
- * period of time.
+ * This power up turns the Player invincible for a brief
+ * period of time. All Enemy types will bounce off the
+ * Player and path will not turn red upon collision.
  */
-public class Boost extends GameObject implements PowerUp {
-
-    private static Boost boost = null;
-
-    private static final int EFFECTDURATION  = 3;
-    private static final int SPAWNDURATION = 10;
-    private static final int[] SPAWNDELAY = new int[] { 5, 12 };
-    private static final int[] RGB = new int[] { 120, 190, 33 };
+public class Shield extends GameObject implements PowerUp {
     
+    private static Shield shield = null;
+
+    private static final int EFFECTDURATION  = 6;
+    private static final int SPAWNDURATION = 7;
+    private static final int[] SPAWNDELAY = new int[] { 3, 10 };
+    private static final int[] RGB = new int[] { 236, 236, 236 };
+
     private boolean isVisible;
     private boolean inEffect;
     private int delay;
     private int stateChangeFrameCount;
     
     /**
-     * Initialises the Boost power up with the specified sprite and name.
+     * Initialises the Shield power up with the specified sprite and name.
      * 
      * @param sprite - the PImage sprite of the boost
      * @param name - the name of the boost
      */
-    private Boost(PImage sprite, Name name) {
+    private Shield(PImage sprite, Name name) {
 
         super(sprite, name);
-
+        
         delay = SPAWNDELAY[0] + rand.nextInt(SPAWNDELAY[1] - SPAWNDELAY[0]);
         isVisible = false;
         inEffect = false;
@@ -47,26 +48,26 @@ public class Boost extends GameObject implements PowerUp {
      * @param name - the name of the boost
      * @return a single instance of Player
      * 
-     * @see #Boost(PImage, int, int)
+     * @see #Shield(PImage, int, int)
      * @throws IllegalStateException if an instance already exists
      */
-    public static Boost createBoost(PImage sprite, Name name) {
+    public static Shield createShield(PImage sprite, Name name) {
 
-        if (boost == null) {
-            boost = new Boost(sprite, name);
-            return boost;
+        if (shield == null) {
+            shield = new Shield(sprite, name);
+            return shield;
         }
         else throw
-            new IllegalStateException("Boost has already been created");
+            new IllegalStateException("Shield has already been created");
     }
 
     /**
-     * Removes the single instance of Boost.
+     * Removes the single instance of Shield.
      */
-    public static void removeBoost() {
+    public static void removeShield() {
 
-        if (boost != null) {
-            boost = null;
+        if (shield != null) {
+            shield = null;
         }
     }
 
@@ -195,13 +196,13 @@ public class Boost extends GameObject implements PowerUp {
         if (!(entity instanceof Player))
             throw new IllegalArgumentException
                 ("Argument needs to be an instance of Player");
-        
+
         Player player = (Player) entity;
 
         if (overlappedTile == null ||
             overlappedTile.getName() != Name.GRASS) {
             
-            player.setSpeed(Entity.DEFAULTSPEED + 3);
+            player.enableShield();
             inEffect = true;
         }
         despawn(frameCount);
@@ -217,7 +218,7 @@ public class Boost extends GameObject implements PowerUp {
                 ("Argument needs to be an instance of Player");
 
         Player player = (Player) entity;
-        player.setSpeed(Entity.DEFAULTSPEED);
+        player.disableShield();
 
         inEffect = false;
     }

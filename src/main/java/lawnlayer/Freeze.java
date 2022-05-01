@@ -1,32 +1,55 @@
 package lawnlayer;
 
-import java.util.List;
-
 import lawnlayer.Info.Name;
 import processing.core.PApplet;
 import processing.core.PImage;
 
+/**
+ * A subclass of GameObject and implementation of PowerUp.
+ * This power up freezes all Enemy types for a brief period
+ * of time.
+ */
 public class Freeze extends GameObject implements PowerUp {
     
     private static Freeze freeze = null;
 
-    public static final int EFFECTDURATION = 5;
-    public static final int SPAWNDURATION = 10;
+    private static final int EFFECTDURATION  = 4;
+    private static final int SPAWNDURATION = 7;
+    private static final int[] SPAWNDELAY = new int[] { 3, 10 };
+    private static final int[] RGB = new int[] { 185, 242, 255 };
     
     private boolean isVisible;
     private boolean inEffect;
     private int delay;
     private int stateChangeFrameCount;
     
+    /**
+     * Initialises the Freeze power up with the specified sprite and name.
+     * 
+     * @param sprite - the PImage sprite of the boost
+     * @param name - the name of the boost
+     */
     private Freeze(PImage sprite, Name name) {
 
         super(sprite, name);
+
+        delay = SPAWNDELAY[0] + rand.nextInt(SPAWNDELAY[1] - SPAWNDELAY[0]);
         isVisible = false;
         inEffect = false;
-        delay = 3 + rand.nextInt(Info.SPAWNDELAY - 3);
         stateChangeFrameCount = 0;
     }
 
+    /**
+     * A 'static constructor' for Player. If multiple instantiation of Player
+     * is attempted, an exception is thrown.
+     * 
+     * @param sprite - the PImage sprite of the Boost
+     * @param name - the name of the boost
+     * @return a single instance of Player
+     * 
+     * @see #Freeze(PImage, int, int)
+     * @throws IllegalStateException if an instance already exists
+     */
     public static Freeze createFreeze(PImage sprite, Name name) {
 
         if (freeze == null) {
@@ -34,21 +57,26 @@ public class Freeze extends GameObject implements PowerUp {
             return freeze;
         }
         else throw
-            new IllegalStateException("SpeedBoost has already been created");
+            new IllegalStateException("Freeze has already been created");
     }
 
-    public static void removeSpeedBoost() {
+    /**
+     * Removes the single instance of Freeze.
+     */
+    public static void removeFreeze() {
 
         if (freeze != null) {
             freeze = null;
         }
     }
 
-    public void setStartingFrameCount(int frameCount) {
-
-        stateChangeFrameCount = frameCount;
-    }
-
+    /**
+     * Draws the power up.
+     * 
+     * @param app - the PApplet instance to be drawn in
+     * 
+     * @see GameObject#draw(PApplet)
+     */
     @Override
     public void draw(PApplet app) {
 
@@ -56,6 +84,53 @@ public class Freeze extends GameObject implements PowerUp {
             super.draw(app);
     }
 
+    /**
+     * @see PowerUp#getProgressBarWidth(int, int)
+     */
+    public double getProgressBarWidth(int barWidth, int frameCount) {
+
+        int frameDuration = Info.FPS * EFFECTDURATION;
+        int frameRemaining =
+            frameDuration - (frameCount - stateChangeFrameCount);
+        
+        return (barWidth * ((double) frameRemaining / frameDuration));
+    }
+
+    /**
+     * @see PowerUp#getRGB()
+     */
+    public int[] getRGB() {
+
+        return RGB;
+    }
+
+    /**
+     * @see PowerUp#getStateChangeFrameCount()
+     */
+    public int getStateChangeFrameCount() {
+
+        return stateChangeFrameCount;
+    }
+
+    /**
+     * @see PowerUp#isInEffect()
+     */
+    public boolean isInEffect() {
+
+        return inEffect;
+    }
+
+    /**
+     * @see PowerUp#setStartingFrameCount(int)
+     */
+    public void setStartingFrameCount(int frameCount) {
+
+        stateChangeFrameCount = frameCount;
+    }
+
+    /**
+     * @see PowerUp#isTimeToDeactivate(int)
+     */
     public boolean isTimeToDeactivate(int frameCount) {
 
         int frameDuration = Info.FPS * EFFECTDURATION;
@@ -63,6 +138,9 @@ public class Freeze extends GameObject implements PowerUp {
                 frameCount - stateChangeFrameCount >= frameDuration);
     }
 
+    /**
+     * @see PowerUp#isTimeToDespawn(int)
+     */
     public boolean isTimeToDespawn(int frameCount) {
 
         int frameDuration = Info.FPS * SPAWNDURATION;
@@ -70,6 +148,9 @@ public class Freeze extends GameObject implements PowerUp {
                 frameCount - stateChangeFrameCount >= frameDuration);
     }
 
+    /**
+     * @see PowerUp#isTimeToSpawn(int)
+     */
     public boolean isTimeToSpawn(int frameCount) {
         
         int frameDelay = Info.FPS * delay;
@@ -77,6 +158,9 @@ public class Freeze extends GameObject implements PowerUp {
                 frameCount - stateChangeFrameCount >= frameDelay);
     }
 
+    /**
+     * @see PowerUp#spawn(TileList, int)
+     */
     public void spawn(TileList unfilledTiles, int frameCount) {
         
         int tileIndex = rand.nextInt(unfilledTiles.size());
@@ -89,6 +173,9 @@ public class Freeze extends GameObject implements PowerUp {
         stateChangeFrameCount = frameCount;
     }
 
+    /**
+     * @see PowerUp#despawn(int)
+     */
     public void despawn(int frameCount) {
 
         x = -1;
@@ -96,48 +183,43 @@ public class Freeze extends GameObject implements PowerUp {
 
         isVisible = false;
         stateChangeFrameCount = frameCount;
-        delay = 3 + rand.nextInt(Info.SPAWNDELAY - 3);
+        delay = SPAWNDELAY[0] + rand.nextInt(SPAWNDELAY[1] - SPAWNDELAY[0]);
     }
 
-    public void activateOn(GameObject object, Tile overlappedTile,
+    /**
+     * @see PowerUp#activateOn(Entity, Tile, int)
+     */
+    public void activateOn(Entity entity, Tile overlappedTile,
         int frameCount) {
 
-        if (!(object instanceof Enemy))
+        if (!(entity instanceof Enemy))
             throw new IllegalArgumentException
                 ("Argument needs to be an instance of Enemy");
 
-        Enemy enemy = (Enemy) object;
+        Enemy enemy = (Enemy) entity;
+
         if (overlappedTile == null ||
-            overlappedTile.getName() != Name.GRASS)
+            overlappedTile.getName() != Name.GRASS) {
+            
             enemy.setMovement(Movement.STATIONARY);
-    }
-
-    public void activateOn(List<Enemy> enemies, Tile overlappedTile,
-        int frameCount) {
-
-        for (Enemy enemy : enemies)
-            activateOn(enemy, overlappedTile, frameCount);
-        
-        inEffect = true;
+            inEffect = true;
+        }
         despawn(frameCount);
     }
 
-    public void deactivateOn(GameObject object) {
+    /**
+     * @see PowerUp#deactivateOn(Entity)
+     */
+    public void deactivateOn(Entity entity) {
 
-        if (!(object instanceof Enemy))
+        if (!(entity instanceof Enemy))
             throw new IllegalArgumentException
                 ("Argument needs to be an instance of Enemy");
 
-        Enemy enemy = (Enemy) object;
+        Enemy enemy = (Enemy) entity;
         enemy.initialiseMovement();
 
         inEffect = false;
-    }
-
-    public void deactivateOn(List<Enemy> enemies) {
-
-        for (Enemy enemy : enemies)
-            deactivateOn(enemy);
     }
 
 }

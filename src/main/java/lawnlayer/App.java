@@ -28,6 +28,7 @@ public class App extends PApplet {
     // Font and sprite images
 
     private PFont font;
+
     private PImage soil;
     private PImage concreteSprite;
     private PImage greenPathSprite;
@@ -35,11 +36,13 @@ public class App extends PApplet {
     private PImage wormSprite;
     private PImage beetleSprite;
 
+    private PImage heartSprite;
     private PImage freezeSprite;
     private PImage boostSprite;
-    private PImage heart;
+    private PImage invincibleSprite;
+    private PImage shieldSprite;
 
-    // Information for all levels
+    // Config information
 
     private Map<Integer,String> outlays;
     private Map<Integer,List<Enemy>> enemies;
@@ -49,7 +52,8 @@ public class App extends PApplet {
     // Level-specific information
 
     private int currentLevel;
-    private int displayScreenTime;
+
+    private int displayScreenFrameCount;
 
     private int numOfFillables;
     private double fillGoal;
@@ -65,6 +69,8 @@ public class App extends PApplet {
 
     private Boost boost;
     private Freeze freeze;
+    private Invincible invincible;
+    private Shield shield;
 
     public App() {
 
@@ -81,7 +87,7 @@ public class App extends PApplet {
     }
 
     /**
-     * Loads all resources such as images. Initialise the elements such as the
+     * Loads all resources such as images. Initialises the elements such as the
      * player, enemies and map elements.
      */
     @Override
@@ -93,7 +99,7 @@ public class App extends PApplet {
 
         font = createFont(this.getClass().getResource("upheavtt.ttf").getPath(), 50, false);
 
-        soil = loadImage(this.getClass().getResource("background4.png").getPath());
+        soil = loadImage(this.getClass().getResource("background.png").getPath());
         concreteSprite = loadImage(this.getClass().getResource("concrete_tile.png").getPath());
         greenPathSprite = loadImage(this.getClass().getResource("green_path.png").getPath());
         redPathSprite = loadImage(this.getClass().getResource("red_path.png").getPath());
@@ -101,12 +107,14 @@ public class App extends PApplet {
         wormSprite = loadImage(this.getClass().getResource("worm.png").getPath());
         beetleSprite = loadImage(this.getClass().getResource("beetle.png").getPath());
 
-        heart = loadImage(this.getClass().getResource("heart_smaller.png").getPath());
-        freezeSprite = loadImage(this.getClass().getResource("freeze_small.png").getPath());
-        boostSprite = loadImage(this.getClass().getResource("boost_small.png").getPath());
+        heartSprite = loadImage(this.getClass().getResource("heart.png").getPath());
+        freezeSprite = loadImage(this.getClass().getResource("freeze.png").getPath());
+        boostSprite = loadImage(this.getClass().getResource("boost.png").getPath());
+        invincibleSprite = loadImage(this.getClass().getResource("invincible.png").getPath());
+        shieldSprite = loadImage(this.getClass().getResource("shield.png").getPath());
 
-        PImage grassSprite = loadImage(this.getClass().getResource("grass_tile1.png").getPath());
-        PImage ballSprite = loadImage(this.getClass().getResource("ball.png").getPath());
+        PImage grassSprite = loadImage(this.getClass().getResource("grass_tile.png").getPath());
+        PImage playerSprite = loadImage(this.getClass().getResource("ball.png").getPath());
 
         // Initialise config information containers
 
@@ -126,34 +134,33 @@ public class App extends PApplet {
 
         loadConfigFile();
 
-        // Initialise player and power ups
+        // Initialise player and level
         
-        player = Player.createPlayer(ballSprite);
+        player = Player.createPlayer(playerSprite);
 
         currentLevel = 0;
         fillGoal = 0.0;
     }
 
     /**
-     * Draw all elements in the game by current frame.
+     * Draws all elements in the game by current frame.
      */
     @Override
     public void draw() {
 
-        // long start = System.currentTimeMillis();
-
         background(soil);
         textFont(font);
 
-        double percentageFilled = getFilledPercentage();
+        int percentageFilled = (int) (getFilledPercentage() * 100);
+        int percentageGoal = (int) (fillGoal * 100);
         
-        if (fillGoal != 0.0) {
+        if (percentageGoal != 0.0) {
 
-            displayTopBarInfo(percentageFilled);
+            displayTopBarInfo(percentageFilled, percentageGoal);
 
             updatePlayer();
             updateEnemies();
-            updatePathTiles();
+            updateTiles();
             updatePowerUps();
 
             concreteTiles.drawTiles(this);
@@ -162,16 +169,20 @@ public class App extends PApplet {
             pathTiles.drawTiles(this);
 
             player.draw(this);
-            for (Enemy enemy : levelEnemies)
-                enemy.draw(this);
+            levelEnemies.forEach(enemy -> enemy.draw(this));
+            
             boost.draw(this);
             freeze.draw(this);
+            invincible.draw(this);
+            shield.draw(this);
         }
         if (fillGoal == 0 ||
-            percentageFilled >= fillGoal) {
+            percentageFilled >= percentageGoal) {
 
-            if (displayScreenTime == 0)
+            if (displayScreenFrameCount == 0) {
+                deactivateAllPowerUps();
                 currentLevel++;
+            }
             displayScreen("LEVEL");
         }
         if (lives == 0)
@@ -180,8 +191,8 @@ public class App extends PApplet {
         if (currentLevel > goals.size())
             displayScreen("WIN");
         
-        if (displayScreenTime > 0 &&
-            frameCount - displayScreenTime ==
+        if (displayScreenFrameCount > 0 &&
+            frameCount - displayScreenFrameCount ==
                 Info.FPS * DISPLAYSCREENDURATION) {
             
             clearAllTiles();
@@ -192,16 +203,13 @@ public class App extends PApplet {
             else {
                 initialiseLevel(currentLevel);
                 player.respawn();
-                displayScreenTime = 0;
+                displayScreenFrameCount = 0;
             }
         }
-        // long end = System.currentTimeMillis();
-
-        // System.out.printf("Drawing took %d ms%n", (end - start));
     }
 
     /**
-     * Changes ball's direction when player presses a keyboard key
+     * Changes ball's direction when player presses a keyboard key.
      */
     @Override
     public void keyPressed() {
@@ -223,6 +231,9 @@ public class App extends PApplet {
         }
     }
 
+    /**
+     * Clears all tile containers.
+     */
     private void clearAllTiles() {
 
         concreteTiles.clear();
@@ -232,57 +243,99 @@ public class App extends PApplet {
         pathTiles.clear();
     }
 
-    private void displayScreen(String result) {
+    /**
+     * Deactivates all power ups.
+     */
+    private void deactivateAllPowerUps() {
 
-        if (result.equals("WIN")) {
+        if (boost != null)
+            boost.deactivateOn(player);
+        
+        if (freeze != null && levelEnemies != null)
+            levelEnemies.forEach(freeze::deactivateOn);
+        
+        if (invincible != null && levelEnemies != null) {
+            invincible.deactivateOn(player);
+            levelEnemies.forEach(invincible::deactivateOn);
+        }
+        if (shield != null)
+            shield.deactivateOn(player);
+    }
+
+    /**
+     * Displays the win, lose, and level screen.
+     * 
+     * @param type - the type of display screen
+     */
+    private void displayScreen(String type) {
+
+        if (type.equals("WIN")) {
 
             background(107, 142, 35);
             fill(255);
             textAlign(CENTER, CENTER);
-            text("You win :D", 640, 360);
+            text("You Win!", 640, 360);
         }
-        if (result.equals("LOSE")) {
+        if (type.equals("LOSE")) {
 
             background(0);
             fill(255);
             textAlign(CENTER, CENTER);
-            text("You lose D:", 640, 360);
+            text("Game Over", 640, 360);
         }
-        if (result.equals("LEVEL")) {
+        if (type.equals("LEVEL")) {
 
             background(205,133,63);
             fill(255);
             textAlign(CENTER, CENTER);
             text("Level " + currentLevel, 640, 300);
             
-            image(heart, 570, 340);
+            image(heartSprite, 570, 340);
             text("x " + lives, 665, 351);
         }
-        if (displayScreenTime == 0)
-            displayScreenTime = frameCount;
+        if (displayScreenFrameCount == 0)
+            displayScreenFrameCount = frameCount;
     }
 
-    private void displayTopBarInfo(double percentageFilled) {
+    /**
+     * Displays the information located at the top bar.
+     * 
+     * @param percentageFilled - the percentage of tiles filled
+     * @param percentageGoal - the percentage of tiles required to be filled
+     */
+    private void displayTopBarInfo(int percentageFilled, int percentageGoal) {
 
         fill(0);
         textAlign(RIGHT, CENTER);
-        text((int) (percentageFilled * 100) + "% | " +
-                (int) (fillGoal * 100) + "%", 1250, 35);
+        text(percentageFilled + "% | " + percentageGoal + "%", 1250, 35);
 
         textAlign(CENTER, CENTER);
         text("Level " + currentLevel, 640, 35);
 
         int x = 30;
         for (int n = 0; n < lives; n++) {
-            image(heart, x, 25);
+            image(heartSprite, x, 25);
             x += 50;
         }
     }
 
-    private TileList fillFrom(String filename, char marker) {
+    /**
+     * Scans a text file and creates a TileList of tiles based on the
+     * specified marker.
+     * <p>
+     * Scans through the text file and looks for the marker. Creates a
+     * tile at the same relative XY-coordinate as the marker and adds it
+     * into a TileList. After all of the file has been scanned, returns
+     * the filled TileList.
+     * 
+     * @param filename - the name of the text file to be scanned
+     * @param marker - the marker to be used to create tiles
+     * @return a TileList of tiles created from the marker in the text file
+     */
+    private TileList fillFrom(String filename, char marker, Name tileName) {
 
         File outlayFile = new File(filename);
-        TileList tiles = new TileList(concreteSprite, Name.CONCRETE);
+        TileList tiles = new TileList(concreteSprite, tileName);
 
         try {
             Scanner scan = new Scanner(outlayFile);
@@ -299,7 +352,7 @@ public class App extends PApplet {
 
                     if (c == marker) {
                         Tile concreteTile =
-                            new Tile(concreteSprite, x, y, Name.CONCRETE);
+                            new Tile(concreteSprite, x, y, tileName);
                         tiles.add(concreteTile);
                     }
                 }
@@ -312,34 +365,55 @@ public class App extends PApplet {
         return tiles;
     }
 
+    /**
+     * Calculates the current percentage of tiles filled.
+     * 
+     * @return the percentage of tiles filled
+     */
     private double getFilledPercentage() {
 
         return ((double) (borderTiles.size() + grassTiles.size()) /
                 numOfFillables);
     }
 
+    /**
+     * Initialises the elements of the specifed 'currentLevel'.
+     * <p>
+     * This includes concrete tiles, enemies, and power ups.
+     * 
+     * @param currentLevel - the level to initialise
+     */
     private void initialiseLevel(int currentLevel) {
 
         try {
 
             String currentOutlay = outlays.get(currentLevel);
-            concreteTiles = fillFrom(currentOutlay, 'X');
-            dirtTiles = fillFrom(currentOutlay, ' ');
+            concreteTiles = fillFrom(currentOutlay, 'X', Name.CONCRETE);
+            dirtTiles = fillFrom(currentOutlay, ' ', Name.DIRT);
 
             numOfFillables = dirtTiles.size();
             fillGoal = goals.get(currentLevel);
 
             levelEnemies = enemies.get(currentLevel);
-            for (Enemy enemy : levelEnemies)
-                enemy.checkIfIsStuckInside(concreteTiles);
+            levelEnemies.forEach(enemy ->
+                enemy.checkIfIsStuckInside(concreteTiles));
 
-            Boost.removeSpeedBoost();
-            boost = Boost.createSpeedBoost(boostSprite, Name.BOOST);
+            Boost.removeBoost();
+            boost = Boost.createBoost(boostSprite, Name.BOOST);
             boost.setStartingFrameCount(frameCount);
 
-            Freeze.removeSpeedBoost();
+            Freeze.removeFreeze();
             freeze = Freeze.createFreeze(freezeSprite, Name.FREEZE);
             freeze.setStartingFrameCount(frameCount);
+
+            Invincible.removeInvincible();
+            invincible = Invincible.createInvincible
+                (invincibleSprite, Name.INVINCIBLE);
+            invincible.setStartingFrameCount(frameCount);
+
+            Shield.removeShield();
+            shield = Shield.createShield(shieldSprite, Name.SHIELD);
+            shield.setStartingFrameCount(frameCount);
         }
         catch (NullPointerException e) {
 
@@ -353,6 +427,10 @@ public class App extends PApplet {
         }
     }
 
+    /**
+     * Loads in the config information from the config file into
+     * their respective containers.
+     */
     private void loadConfigFile() {
 
         JSONObject values = loadJSONObject(configPath);
@@ -395,6 +473,10 @@ public class App extends PApplet {
         lives = values.getInt("lives");
     }
 
+    /**
+     * Updates all Enemies' behaviours per frame, which includes
+     * collisions and movements, and killing off Player.
+     */
     private void updateEnemies() {
 
         int enemySpeed = levelEnemies.get(0).getSpeed();
@@ -407,26 +489,30 @@ public class App extends PApplet {
                 enemy.checkForCollisionWith(pathTiles, grassTiles, false);
                 enemy.checkForCollisionWith(borderTiles, grassTiles, false);
 
-                if (enemy.hasCollidedWith(pathTiles)) {
+                if (enemy.hasCollidedWith(pathTiles) &&
+                    !player.isShielded()) {
 
                     Tile collidedTile = enemy.getCollidedTile();
                     collidedTile.turnRed(redPathSprite, frameCount);
                 }
-                if (player.isOverlapping(enemy)) {
+                if (player.isOverlapping(enemy) &&
+                    !player.isShielded()) {
                     
                     player.respawn();
-                    boost.deactivateOn(player);
-                    freeze.deactivateOn(levelEnemies);
                     pathTiles.clear();
+                    deactivateAllPowerUps();
                     lives--;
-                    break;
                 }
                 enemy.move();
             }
         }
     }
 
-    private void updatePathTiles() {
+    /**
+     * Updates all Tiles' behaviours per frame, which includes
+     * filling regions and propagating red paths.
+     */
+    private void updateTiles() {
 
         if (player.isOnSafeTile() &&
             !pathTiles.isEmpty()) {
@@ -439,6 +525,10 @@ public class App extends PApplet {
         pathTiles.propagate(redPathSprite, frameCount);
     }
 
+    /**
+     * Updates the Player's behaviours per frame, which includes
+     * laying down path, dying, and activating power ups.
+     */
     private void updatePlayer() {
 
         for (int i = 0; i < player.getSpeed(); i++) {
@@ -462,40 +552,83 @@ public class App extends PApplet {
                 overlappedTile.isRed())) {
 
                 player.respawn();
-                boost.deactivateOn(player);
-                freeze.deactivateOn(levelEnemies);
                 pathTiles.clear();
+                deactivateAllPowerUps();
                 lives--;
             }
             if (player.isOverlapping(boost))
                 boost.activateOn(player, overlappedTile, frameCount);
             
             if (player.isOverlapping(freeze))
-                freeze.activateOn(levelEnemies, overlappedTile, frameCount);
+                levelEnemies.forEach(enemy ->
+                    freeze.activateOn(enemy, overlappedTile, frameCount));
+
+            if (player.isOverlapping(invincible)) {
+                invincible.activateOn(player, overlappedTile, frameCount);
+                levelEnemies.forEach(enemy ->
+                    invincible.activateOn(enemy, overlappedTile, frameCount));
+            }
+            if (player.isOverlapping(shield))
+                shield.activateOn(player, overlappedTile, frameCount);
             
             player.move();
         }
     }
 
+    /**
+     * Updates all PowerUps' behaviours per frame, which includes
+     * spawning and despawning, activating and deactivating, and
+     * displaying the progress bar.
+     */
     private void updatePowerUps() {
 
-        if (boost.isTimeToSpawn(frameCount))
-            boost.spawn(dirtTiles, frameCount);
-        
-        if (boost.isTimeToDespawn(frameCount))
-            boost.despawn(frameCount);
-        
+        PowerUp[] powerUps =
+            new PowerUp[] {boost, freeze, invincible, shield};
+
+        PowerUp mostRecent = null;
+
+        for (PowerUp powerUp : powerUps) {
+
+            if (powerUp.isTimeToSpawn(frameCount))
+                powerUp.spawn(dirtTiles, frameCount);
+
+            if (powerUp.isTimeToDespawn(frameCount))
+                powerUp.despawn(frameCount);
+
+            if (powerUp.isInEffect() &&
+                (mostRecent == null ||
+                powerUp.getStateChangeFrameCount() >
+                mostRecent.getStateChangeFrameCount())) {
+                
+                mostRecent = powerUp;
+            }
+        }
+        if (mostRecent != null) {
+            
+            int[] rgb = mostRecent.getRGB();
+            int width =
+                (int) mostRecent.getProgressBarWidth(240, frameCount);
+            
+            rectMode(CORNER);
+            fill(100);
+            rect(200, 26, 240, 30, 20);
+
+            rectMode(CORNER);
+            fill(rgb[0], rgb[1], rgb[2]);
+            rect(200, 26, width, 30, 20);
+        }
         if (boost.isTimeToDeactivate(frameCount))
             boost.deactivateOn(player);
 
-        if (freeze.isTimeToSpawn(frameCount))
-            freeze.spawn(dirtTiles, frameCount);
-        
-        if (freeze.isTimeToDespawn(frameCount))
-            freeze.despawn(frameCount);
-
         if (freeze.isTimeToDeactivate(frameCount))
-            freeze.deactivateOn(levelEnemies);
+            levelEnemies.forEach(freeze::deactivateOn);
+        
+        if (invincible.isTimeToDeactivate(frameCount)) {
+            invincible.deactivateOn(player);
+            levelEnemies.forEach(freeze::deactivateOn);
+        }
+        if (shield.isTimeToDeactivate(frameCount))
+            shield.deactivateOn(player);
     }
 
     public static void main(String[] args) {

@@ -1,9 +1,17 @@
 package lawnlayer;
 
+/**
+ * An enum indicating the movement of Enemy types.
+ */
 public enum Movement {
     
     UPLEFT, UPRIGHT, DOWNLEFT, DOWNRIGHT, STATIONARY;
 
+    /**
+     * Flips the current movement on the vertical axis.
+     * 
+     * @return the vertically flipped movement.
+     */
     public Movement flipVertically() {
 
         switch (this) {
@@ -21,6 +29,11 @@ public enum Movement {
         }
     }
 
+    /**
+     * Flips the current movement on the horizontal axis.
+     * 
+     * @return the horizontally flipped movement.
+     */
     public Movement flipHorizontally() {
 
         switch (this) {

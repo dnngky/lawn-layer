@@ -6,33 +6,34 @@ import processing.core.PImage;
 
 /**
  * A subclass of GameObject and implementation of PowerUp.
- * This power up increases the Player's speed for a brief
- * period of time.
+ * This power up turns the Player invincible for a brief period
+ * of time, which includes all the other three power ups (boost,
+ * freeze, and shield).
  */
-public class Boost extends GameObject implements PowerUp {
+public class Invincible extends GameObject implements PowerUp {
 
-    private static Boost boost = null;
+    private static Invincible invincible = null;
 
-    private static final int EFFECTDURATION  = 3;
-    private static final int SPAWNDURATION = 10;
-    private static final int[] SPAWNDELAY = new int[] { 5, 12 };
-    private static final int[] RGB = new int[] { 120, 190, 33 };
-    
+    private static final int EFFECTDURATION  = 5;
+    private static final int SPAWNDURATION = 7;
+    private static final int[] SPAWNDELAY = new int[] { 20, 25 };
+    private static final int[] RGB = new int[] { 255, 165, 0 };
+
     private boolean isVisible;
     private boolean inEffect;
     private int delay;
     private int stateChangeFrameCount;
     
     /**
-     * Initialises the Boost power up with the specified sprite and name.
+     * Initialises the Invincible power up with the specified sprite and name.
      * 
      * @param sprite - the PImage sprite of the boost
      * @param name - the name of the boost
      */
-    private Boost(PImage sprite, Name name) {
+    private Invincible(PImage sprite, Name name) {
 
         super(sprite, name);
-
+        
         delay = SPAWNDELAY[0] + rand.nextInt(SPAWNDELAY[1] - SPAWNDELAY[0]);
         isVisible = false;
         inEffect = false;
@@ -47,26 +48,26 @@ public class Boost extends GameObject implements PowerUp {
      * @param name - the name of the boost
      * @return a single instance of Player
      * 
-     * @see #Boost(PImage, int, int)
+     * @see #Invincible(PImage, int, int)
      * @throws IllegalStateException if an instance already exists
      */
-    public static Boost createBoost(PImage sprite, Name name) {
+    public static Invincible createInvincible(PImage sprite, Name name) {
 
-        if (boost == null) {
-            boost = new Boost(sprite, name);
-            return boost;
+        if (invincible == null) {
+            invincible = new Invincible(sprite, name);
+            return invincible;
         }
         else throw
-            new IllegalStateException("Boost has already been created");
+            new IllegalStateException("Invicible has already been created");
     }
 
     /**
-     * Removes the single instance of Boost.
+     * Removes the single instance of Invincible.
      */
-    public static void removeBoost() {
+    public static void removeInvincible() {
 
-        if (boost != null) {
-            boost = null;
+        if (invincible != null) {
+            invincible = null;
         }
     }
 
@@ -192,17 +193,31 @@ public class Boost extends GameObject implements PowerUp {
     public void activateOn(Entity entity, Tile overlappedTile,
         int frameCount) {
 
-        if (!(entity instanceof Player))
+        if (!(entity instanceof Player || entity instanceof Enemy))
             throw new IllegalArgumentException
-                ("Argument needs to be an instance of Player");
+                ("Argument needs to be an instance of Player or Enemy");
         
-        Player player = (Player) entity;
+        if (entity instanceof Player) {
 
-        if (overlappedTile == null ||
-            overlappedTile.getName() != Name.GRASS) {
-            
-            player.setSpeed(Entity.DEFAULTSPEED + 3);
-            inEffect = true;
+            Player player = (Player) entity;
+
+            if (overlappedTile == null ||
+                overlappedTile.getName() != Name.GRASS) {
+                
+                player.setSpeed(Entity.DEFAULTSPEED + 3);
+                player.enableShield();
+            }
+        }
+        if (entity instanceof Enemy) {
+
+            Enemy enemy = (Enemy) entity;
+
+            if (overlappedTile == null ||
+                overlappedTile.getName() != Name.GRASS) {
+                
+                enemy.setMovement(Movement.STATIONARY);
+                inEffect = true;
+            }
         }
         despawn(frameCount);
     }
@@ -212,14 +227,22 @@ public class Boost extends GameObject implements PowerUp {
      */
     public void deactivateOn(Entity entity) {
 
-        if (!(entity instanceof Player))
+        if (!(entity instanceof Player || entity instanceof Enemy))
             throw new IllegalArgumentException
-                ("Argument needs to be an instance of Player");
+                ("Argument needs to be an instance of Player or Enemy");
+            
+        if (entity instanceof Player) {
 
-        Player player = (Player) entity;
-        player.setSpeed(Entity.DEFAULTSPEED);
+            Player player = (Player) entity;
+            player.setSpeed(Entity.DEFAULTSPEED);
+            player.disableShield();
+        }
+        if (entity instanceof Enemy) {
 
+            Enemy enemy = (Enemy) entity;
+            enemy.initialiseMovement();
+        }
         inEffect = false;
     }
-
+    
 }

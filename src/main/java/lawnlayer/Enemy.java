@@ -11,7 +11,7 @@ public class Enemy extends Entity {
     
     private Side collidedAt;
     private Tile collidedTile;
-    public Movement movement;
+    private Movement movement;
 
     /**
      * Initialises an Enemy with the specified sprite and name. Its

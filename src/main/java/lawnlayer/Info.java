@@ -28,17 +28,16 @@ public final class Info {
      * The size of a square sprite (pixels).
      */
     public static final int SPRITESIZE = 20;
-    /**
-     * The maximum delay interval between each power up's spawn.
-     */
-    public static final int SPAWNDELAY = 10;
 
     /**
-     * An enum containing the pre-defined names of the GameObjects (seconds).
+     * An enum containing the pre-defined names of the GameObjects.
      */
     public enum Name {
 
-        CONCRETE, GRASS, PATH, PLAYER, BEETLE, WORM, BOOST, FREEZE, UNNAMED;
+        CONCRETE, DIRT, GRASS, PATH,
+        PLAYER, BEETLE, WORM,
+        BOOST, FREEZE, INVINCIBLE, SHIELD,
+        UNNAMED;
     }
 
     // Explicitly defining a private constructor to prevent instantiation

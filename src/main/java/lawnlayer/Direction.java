@@ -1,9 +1,18 @@
 package lawnlayer;
 
+/**
+ * An enum indicating the direction the Player is moving in,
+ * as well as the orientation of Tiles.
+ */
 public enum Direction {
 
     UP, DOWN, LEFT, RIGHT, NONE;
 
+    /**
+     * Flips the current direction by 180 degrees.
+     * 
+     * @return the opposite direction.
+     */
     public Direction flip() {
 
         switch (this) {
@@ -21,6 +30,11 @@ public enum Direction {
         }
     }
 
+    /**
+     * Flips the current direction by 90 degrees.
+     * 
+     * @return the normal direction
+     */
     public Direction normal() {
 
         switch (this) {

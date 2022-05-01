@@ -48,13 +48,17 @@ public class Player extends Entity {
      * Indicates whether Player is moving on a soil surfece (this
      * includes grass).
      */
-    private boolean onSoil;
+    private boolean isOnSoil;
     /**
      * Indicates whether Player is moving towards a tile space, and
      * ensures Player stops after moving to the nearest tile space,
      * unless a key is continuously pressed.
      */
-    private boolean movingTowardsTile;
+    private boolean isMovingTowardsTile;
+    /**
+     * Indicates whether Player is currently shielded.
+     */
+    private boolean isShielded;
     /**
      * Indicates that the Player is in the process of stopping.
      */
@@ -74,8 +78,9 @@ public class Player extends Entity {
         movementQueue = new ArrayList<>();
         movementQueue.add(currentDirection);
         overlappedTile = null;
-        onSoil = false;
-        movingTowardsTile = false;
+        isOnSoil = false;
+        isMovingTowardsTile = false;
+        isShielded = false;
         stopQueue = false;
     }
 
@@ -94,8 +99,8 @@ public class Player extends Entity {
         movementQueue = new ArrayList<>();
         movementQueue.add(currentDirection);
         overlappedTile = null;
-        onSoil = false;
-        movingTowardsTile = false;
+        isOnSoil = false;
+        isMovingTowardsTile = false;
         stopQueue = false;
     }
 
@@ -128,7 +133,7 @@ public class Player extends Entity {
      * @param y - the y-coordinate of the Player
      * @return a single instance of Player
      * 
-     * @see Player#Player(PImage, int, int)
+     * @see #Player(PImage, int, int)
      * @throws IllegalStateException if an instance already exists
      */
     public static Player createPlayer(PImage sprite, int x, int y) {
@@ -153,13 +158,33 @@ public class Player extends Entity {
      */
     public Tile createPath(PImage greenPathSprite) {
 
-        if (onSoil && isOnTileSpace()) {
+        if (isOnSoil && isOnTileSpace()) {
             
             Tile newPath = new Tile(greenPathSprite, x, y, Name.PATH);
             newPath.setOrientation(currentDirection);
             return newPath;
         }
         return null;
+    }
+
+    /**
+     * Enables shield mode on Player.
+     * 
+     * @see #isShielded
+     */
+    public void disableShield() {
+
+        isShielded = false;
+    }
+
+    /**
+     * Disables shield mode on Player.
+     * 
+     * @see #isShielded
+     */
+    public void enableShield() {
+
+        isShielded = true;
     }
 
     /**
@@ -225,6 +250,18 @@ public class Player extends Entity {
         return (overlappedTile != null &&
                 (overlappedTile.getName() == Name.CONCRETE ||
                 overlappedTile.getName() == Name.GRASS));
+    }
+
+    /**
+     * Checks if Player is current shielded.
+     * 
+     * @return true if Player is currently in shield mode
+     * 
+     * @see #isShielded
+     */
+    public boolean isShielded() {
+
+        return isShielded;
     }
 
     /**
@@ -308,10 +345,10 @@ public class Player extends Entity {
      * <p>
      * Sets Player's XY-coordinate to the pre-defined spawn point,
      * clears any queues in the movement queue, sets overlappedTile
-     * to null, and disables movingTowardsTile and onSoil.
+     * to null, and disables isMovingTowardsTile and isOnSoil.
      * 
-     * @see #onSoil
-     * @see #movingTowardsTile
+     * @see #isOnSoil
+     * @see #isMovingTowardsTile
      */
     public void respawn() {
 
@@ -323,25 +360,25 @@ public class Player extends Entity {
         movementQueue.add(currentDirection);
 
         overlappedTile = null;
-        movingTowardsTile = false;
-        onSoil = false;
+        isMovingTowardsTile = false;
+        isOnSoil = false;
     }
 
     /**
      * Brings Player's movement to a halt once it has reached the
      * nearest tile space.
      * <p>
-     * onSoil is disabled, movingTowardsTile is enabled, and stopQueue
+     * isOnSoil is disabled, isMovingTowardsTile is enabled, and stopQueue
      * is enabled.
      * 
-     * @see #onSoil
-     * @see #movingTowardsTile
+     * @see #isOnSoil
+     * @see #isMovingTowardsTile
      * @see #stopQueue
      */
     public void stop() {
 
-        onSoil = false;
-        movingTowardsTile = true;
+        isOnSoil = false;
+        isMovingTowardsTile = true;
         stopQueue = true;
     }
 
@@ -350,12 +387,12 @@ public class Player extends Entity {
      * grass or soil surface, and vice versa.
      * <p>
      * If overlappedTile is null, or it is a grass tile and stopQueue is
-     * currently disabled, enables onSoil and disables movingTowardsTile.
-     * Else if overlappedTile is a concrete tile, disables onSoil and
-     * enables movingTowardsTile.
+     * currently disabled, enables isOnSoil and disables isMovingTowardsTile.
+     * Else if overlappedTile is a concrete tile, disables isOnSoil and
+     * enables isMovingTowardsTile.
      * 
-     * @see #onSoil
-     * @see #movingTowardsTile
+     * @see #isOnSoil
+     * @see #isMovingTowardsTile
      * @see #stopQueue
      */
     public void updateStatus(Tile overlappedTile) {
@@ -364,13 +401,13 @@ public class Player extends Entity {
             (overlappedTile.getName() == Name.GRASS &&
             !stopQueue)) {
 
-            onSoil = true;
-            movingTowardsTile = false;
+            isOnSoil = true;
+            isMovingTowardsTile = false;
         }
         else if (overlappedTile.getName() == Name.CONCRETE) {
 
-            onSoil = false;
-            movingTowardsTile = true;
+            isOnSoil = false;
+            isMovingTowardsTile = true;
         }
     }
 
@@ -483,14 +520,14 @@ public class Player extends Entity {
      * Moves Player downwards.
      * 
      * @param positionTile - the Tile space Player will move to if
-     * movingTowardsTile is true
+     * isMovingTowardsTile is true
      * 
-     * @see #movingTowardsTile
+     * @see #isMovingTowardsTile
      * @see #moveDownTo(Tile)
      */
     private void moveDown(Tile positionTile) {
 
-        if (onSoil && !movingTowardsTile)
+        if (isOnSoil && !isMovingTowardsTile)
             y++;
         else
             moveDownTo(positionTile);
@@ -528,14 +565,14 @@ public class Player extends Entity {
      * Moves Player leftwards.
      * 
      * @param positionTile - the Tile space Player will move to if
-     * movingTowardsTile is true
+     * isMovingTowardsTile is true
      * 
-     * @see #movingTowardsTile
+     * @see #isMovingTowardsTile
      * @see #moveLeftTo(Tile)
      */
     private void moveLeft(Tile positionTile) {
 
-        if (onSoil && !movingTowardsTile)
+        if (isOnSoil && !isMovingTowardsTile)
             x--;
         else
             moveLeftTo(positionTile);
@@ -573,14 +610,14 @@ public class Player extends Entity {
      * Moves Player rightwards.
      * 
      * @param positionTile - the Tile space Player will move to if
-     * movingTowardsTile is true
+     * isMovingTowardsTile is true
      * 
-     * @see #movingTowardsTile
+     * @see #isMovingTowardsTile
      * @see #moveRightTo(Tile)
      */
     private void moveRight(Tile positionTile) {
 
-        if (onSoil && !movingTowardsTile)
+        if (isOnSoil && !isMovingTowardsTile)
             x++;
         else
             moveRightTo(positionTile);
@@ -618,14 +655,14 @@ public class Player extends Entity {
      * Moves Player upwards.
      * 
      * @param positionTile - the Tile space Player will move to if
-     * movingTowardsTile is true
+     * isMovingTowardsTile is true
      * 
-     * @see #movingTowardsTile
+     * @see #isMovingTowardsTile
      * @see #moveUpTo(Tile)
      */
     private void moveUp(Tile positionTile) {
 
-        if (onSoil && !movingTowardsTile)
+        if (isOnSoil && !isMovingTowardsTile)
             y--;
         else
             moveUpTo(positionTile);
@@ -662,16 +699,16 @@ public class Player extends Entity {
     /**
      * Halts the player's movement on the next immediate frame.
      * <p>
-     * Resets currentDirection, and disables movingTowardsTile and
-     * stopQueue.
+     * Resets currentDirection, and disables isMovingTowardsTile
+     * and stopQueue.
      * 
-     * @see #movingTowardsTile
+     * @see #isMovingTowardsTile
      * @see #stopQueue
      */
     private void stopMoving() {
 
         currentDirection = Direction.NONE;
-        movingTowardsTile = false;
+        isMovingTowardsTile = false;
         stopQueue = false;
     }
 
