@@ -31,10 +31,10 @@ public class Tile extends GameObject {
     /**
      * Initiates a tile with the specified sprite, xy-coordinates, and name.
      * 
-     * @param sprite - the PImage sprite of the tile
-     * @param x - the x-coordinate of the tile
-     * @param y - the y-coordinate of the tile
-     * @param name - the name of the tile
+     * @param sprite the PImage sprite of the tile
+     * @param x the x-coordinate of the tile
+     * @param y the y-coordinate of the tile
+     * @param name the name of the tile
      * 
      * @see GameObject#GameObject(PImage, int, int, Name)
      */
@@ -80,7 +80,7 @@ public class Tile extends GameObject {
     /**
      * Retrieves the orientation of this Tile.
      * 
-     * @return
+     * @return this Tile's orientation
      */
     public Direction getOrientation() {
 
@@ -93,7 +93,7 @@ public class Tile extends GameObject {
      * Its orientation is set to the direction in which it is adjacent
      * to this Tile.
      * 
-     * @param direction - the direction of the adjacent Tile
+     * @param direction the direction of the adjacent Tile
      * @return a new adjacent Tile
      */
     public Tile getAdjacentTile(Direction direction) {
@@ -150,7 +150,7 @@ public class Tile extends GameObject {
     /**
      * Checks whether this Tile is adjacent to the specified Tile 'other'.
      * 
-     * @param other - the Tile to be checked for adjacency with this Tile
+     * @param other the Tile to be checked for adjacency with this Tile
      * @return true if this Tile is adjacent to 'other'
      */
     public boolean isAdjacentTo(Tile other) {
@@ -176,7 +176,7 @@ public class Tile extends GameObject {
      * if none of the adjacent tiles are contained in the otherTiles.
      * Returns false otherwise.
      * 
-     * @param otherTiles - the TileList in which this Tile is to be checked
+     * @param otherTiles the TileList in which this Tile is to be checked
      * against for floating
      * @return true if this Tile is floating
      */
@@ -208,7 +208,7 @@ public class Tile extends GameObject {
     /**
      * Sets the orientation of this Tile to the specified orientation.
      * 
-     * @param orientation - the orientation to be set to for this Tile 
+     * @param orientation the orientation to be set to for this Tile 
      */
     public void setOrientation(Direction orientation) {
 
@@ -222,8 +222,8 @@ public class Tile extends GameObject {
      * sets the frame of collision to the specified frameCount, and
      * updates isRed to true.
      * 
-     * @param redPathSprite - the PImage sprite this Tile is to be set to
-     * @param frameCount - the frame this Tile's frame of collision is to
+     * @param redPathSprite the PImage sprite this Tile is to be set to
+     * @param frameCount the frame this Tile's frame of collision is to
      * be set to
      */
     public void turnRed(PImage redPathSprite, int frameCount) {

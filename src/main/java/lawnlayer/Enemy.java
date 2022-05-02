@@ -17,8 +17,8 @@ public class Enemy extends Entity {
      * Initialises an Enemy with the specified sprite and name. Its
      * XY-coordinate will be randomised within the map bounds.
      * 
-     * @param sprite - the PImage sprite of the Enemy
-     * @param name - the name of the Enemy
+     * @param sprite the PImage sprite of the Enemy
+     * @param name the name of the Enemy
      * 
      * @see Entity#Entity(PImage, Name)
      */
@@ -35,10 +35,10 @@ public class Enemy extends Entity {
      * Initialises an Enemy with the specified sprite, XY-coordinate,
      * and name.
      * 
-     * @param sprite - the PImage sprite of the Enemy
-     * @param x - the x-coordinate of the Enemy
-     * @param y - the y-coordinate of the Enemy
-     * @param name - the name of the Enemy
+     * @param sprite the PImage sprite of the Enemy
+     * @param x the x-coordinate of the Enemy
+     * @param y the y-coordinate of the Enemy
+     * @param name the name of the Enemy
      * 
      * @see Enemy#Enemy(PImage, int, int, Name)
      */
@@ -55,9 +55,9 @@ public class Enemy extends Entity {
      * Initialises an Enemy with the specified sprite, tile location, and
      * name. Its XY-coordinate will be randomised within the tile location.
      * 
-     * @param sprite - the PImage sprite of the Enemy
-     * @param location - the tile location of the Enemy
-     * @param name - the name of the Enemy
+     * @param sprite the PImage sprite of the Enemy
+     * @param location the tile location of the Enemy
+     * @param name the name of the Enemy
      * 
      * @see Enemy#Enemy(PImage, String, Name)
      */
@@ -80,12 +80,12 @@ public class Enemy extends Entity {
      * border tiles, and the Enemy type is beetle, then update the border
      * tiles.
      * 
-     * @param otherTiles - the TileList to be checked against for collision
+     * @param otherTiles the TileList to be checked against for collision
      * with this Enemy
-     * @param fillTiles - the TileList which will be updated alongside
+     * @param fillTiles the TileList which will be updated alongside
      * 'otherTiles' if 'otherTiles' are grass borders tiles and Enemy type
      * is beetle
-     * @param printMsg - toggles collision messages printed in the terminal
+     * @param printMsg toggles collision messages printed in the terminal
      * 
      * @see #checkForDiagonalCollisionWith(TileList)
      * @see #checkForStraightCollisionWith(TileList)
@@ -115,6 +115,28 @@ public class Enemy extends Entity {
     }
 
     /**
+     * Checks if this Enemy has spawned at a tile location already occupied
+     * by a tile in the specified TileList 'otherTiles'.
+     * <p>
+     * Checks if this Enemy is overlapping at least one tile in 'otherTiles'.
+     * If it is, randomises its XY-coordinate within the map bounds and
+     * rechecks until it is no longer overlapping any tiles.
+     * 
+     * @param otherTiles the TileList to be checked against for entrapping
+     * this Enemy
+     * 
+     * @see GameObject#randomiseXY()
+     * @see Entity#isOverlapping(GameObject)
+     */
+    public void checkIfIsStuckInside(TileList otherTiles) {
+
+        if (isOverlapping(otherTiles)) {
+            randomiseXY();
+            checkIfIsStuckInside(otherTiles);
+        }
+    }
+
+    /**
      * Retrieves the tile collided by this Enemy.
      * 
      * @return the collided tile
@@ -125,6 +147,16 @@ public class Enemy extends Entity {
     }
 
     /**
+     * Retrieves the Enemy's current movement.
+     * 
+     * @return the current movement
+     */
+    public Movement getMovement() {
+
+        return movement;
+    }
+
+    /**
      * Checks if this Enemy has collided with one of the tiles specified in
      * the specified TileList 'otherTiles'.
      * <p>
@@ -132,7 +164,7 @@ public class Enemy extends Entity {
      * null) and, if it has, whether it shares the same name as the name of
      * the tiles in 'otherTiles'.
      * 
-     * @param otherTiles - the TileList to be checked against for collision
+     * @param otherTiles the TileList to be checked against for collision
      * @return true if this Enemy has collided with a tile in 'otherTiles'
      */
     public boolean hasCollidedWith(TileList otherTiles) {
@@ -147,8 +179,6 @@ public class Enemy extends Entity {
      * Allocates each direction of movement to an integer from 0 to 3.
      * Then, retrieves a random integer from 0 and to 3 and sets this
      * Enemy's direction of movement accordingly.
-     * 
-     * @return a randomised direction of movement
      * 
      * @see GameObject#rand
      */
@@ -254,7 +284,7 @@ public class Enemy extends Entity {
     /**
      * Sets this Enemy's movement to the specified movement.
      * 
-     * @param movement - the movement to be set to this Enemy
+     * @param movement the movement to be set to this Enemy
      */
     public void setMovement(Movement movement) {
 
@@ -288,7 +318,7 @@ public class Enemy extends Entity {
      * Checks whether this Enemy is overlapping on the horizontal axis with
      * the specified 'other' GameObject.
      * 
-     * @param other - the GameObject to be checked against for overlap
+     * @param other the GameObject to be checked against for overlap
      * @return true if this Enemy overlaps on the horizontal axis with 'other'
      * 
      * @see Entity#isOverlappingHorizontally(GameObject)
@@ -303,7 +333,7 @@ public class Enemy extends Entity {
      * Checks whether this Enemy is overlapping on the vertical axis with
      * the specified 'other' GameObject.
      * 
-     * @param other - the GameObject to be checked against for overlap
+     * @param other the GameObject to be checked against for overlap
      * @return true if this Enemy overlaps on the vertical axis with 'other'
      * 
      * @see Entity#isOverlappingVertically(GameObject)
@@ -322,7 +352,7 @@ public class Enemy extends Entity {
      * checks if there are adjacent tiles in the given directions. If there
      * are none, updates this Enemy's collidedTile and collidedAt.
      * 
-     * @param otherTiles - the TileList to be checked against for diagonal
+     * @param otherTiles the TileList to be checked against for diagonal
      * collision
      * 
      * @see #collidesAtBottomLeftWith(Tile, TileList)
@@ -377,7 +407,7 @@ public class Enemy extends Entity {
      * there is an adjacent tile on the opposite side. If there is
      * none, updates this Enemy's collidedTile and collidedAt.
      * 
-     * @param otherTiles - the TileList to be checked against for straight
+     * @param otherTiles the TileList to be checked against for straight
      * collision
      * 
      * @see #collidesAtBottomWith(Tile)
@@ -423,28 +453,6 @@ public class Enemy extends Entity {
     }
 
     /**
-     * Checks if this Enemy has spawned at a tile location already occupied
-     * by a tile in the specified TileList 'otherTiles'.
-     * <p>
-     * Checks if this Enemy is overlapping at least one tile in 'otherTiles'.
-     * If it is, randomises its XY-coordinate within the map bounds and
-     * rechecks until it is no longer overlapping any tiles.
-     * 
-     * @param otherTiles - the TileList to be checked against for entrapping
-     * this Enemy
-     * 
-     * @see GameObject#randomiseXY()
-     * @see Entity#isOverlapping(GameObject)
-     */
-    public void checkIfIsStuckInside(TileList otherTiles) {
-
-        if (isOverlapping(otherTiles)) {
-            randomiseXY();
-            checkIfIsStuckInside(otherTiles);
-        }
-    }
-
-    /**
      * Checks if this Enemy has collided off the top left corner of a
      * tile.
      * <p>
@@ -453,8 +461,8 @@ public class Enemy extends Entity {
      * appropriate XY-coordinate in relation to the tile's XY-coordinate,
      * return true.
      * 
-     * @param tile - the Tile to be checked against for top-left collision
-     * @param otherTiles - the TileList to be checked against for adjacency
+     * @param tile the Tile to be checked against for top-left collision
+     * @param otherTiles the TileList to be checked against for adjacency
      * @return true if this Enemy has collided off the top-left corner
      * of 'tile'
      */
@@ -474,8 +482,8 @@ public class Enemy extends Entity {
      * appropriate XY-coordinate in relation to the tile's XY-coordinate,
      * return true.
      * 
-     * @param tile - the Tile to be checked against for top-right collision
-     * @param otherTiles - the TileList to be checked against for adjacency
+     * @param tile the Tile to be checked against for top-right collision
+     * @param otherTiles the TileList to be checked against for adjacency
      * @return true if this Enemy has collided off the top-right corner
      * of 'tile'
      */
@@ -495,8 +503,8 @@ public class Enemy extends Entity {
      * appropriate XY-coordinate in relation to the tile's XY-coordinate,
      * return true.
      * 
-     * @param tile - the Tile to be checked against for bottom-left collision
-     * @param otherTiles - the TileList to be checked against for adjacency
+     * @param tile the Tile to be checked against for bottom-left collision
+     * @param otherTiles the TileList to be checked against for adjacency
      * @return true if this Enemy has collided off the bottom-left corner
      * of 'tile'
      */
@@ -516,8 +524,8 @@ public class Enemy extends Entity {
      * appropriate XY-coordinate in relation to the tile's XY-coordinate,
      * return true.
      * 
-     * @param tile - the Tile to be checked against for bottom-right collision
-     * @param otherTiles - the TileList to be checked against for adjacency
+     * @param tile the Tile to be checked against for bottom-right collision
+     * @param otherTiles the TileList to be checked against for adjacency
      * @return true if this Enemy has collided off the bottom-right corner
      * of 'tile'
      */
@@ -536,7 +544,7 @@ public class Enemy extends Entity {
      * on the horizontal axis with the same tile, returns true. Recalibrates
      * this Enemy's y-coordinate if needed.
      * 
-     * @param tile - the Tile to be checked against for top collision
+     * @param tile the Tile to be checked against for top collision
      * @return true if this Enemy has collided off the top side of 'tile'.
      * 
      * @see #isOverlappingHorizontally(GameObject)
@@ -560,7 +568,7 @@ public class Enemy extends Entity {
      * on the horizontal axis with the same tile, returns true. Recalibrates
      * this Enemy's y-coordinate if needed.
      * 
-     * @param tile - the Tile to be checked against for bottom collision
+     * @param tile the Tile to be checked against for bottom collision
      * @return true if this Enemy has collided off the bottom side of 'tile'.
      * 
      * @see #isOverlappingHorizontally(GameObject)
@@ -584,7 +592,7 @@ public class Enemy extends Entity {
      * on the vertical axis with the same tile, returns true. Recalibrates
      * this Enemy's x-coordinate if needed.
      * 
-     * @param tile - the Tile to be checked against for left collision
+     * @param tile the Tile to be checked against for left collision
      * @return true if this Enemy has collided off the left side of 'tile'.
      * 
      * @see #isOverlappingVertically(GameObject)
@@ -608,7 +616,7 @@ public class Enemy extends Entity {
      * on the vertical axis with the same tile, returns true. Recalibrates
      * this Enemy's x-coordinate if needed.
      * 
-     * @param tile - the Tile to be checked against for right collision
+     * @param tile the Tile to be checked against for right collision
      * @return true if this Enemy has collided off the right side of 'tile'.
      * 
      * @see #isOverlappingVertically(GameObject)

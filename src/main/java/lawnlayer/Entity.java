@@ -20,8 +20,8 @@ public abstract class Entity extends GameObject {
      * Initialises an Entity with the specified sprite and name. Its
      * XY-coordinate will be randomised within the map bounds.
      * 
-     * @param sprite - the PImage sprite of the Entity
-     * @param name - the name of the Entity
+     * @param sprite the PImage sprite of the Entity
+     * @param name the name of the Entity
      * 
      * @see GameObject#GameObject(PImage, Name)
      */
@@ -35,10 +35,10 @@ public abstract class Entity extends GameObject {
      * Initialises an Entity with the specified sprite, XY-coordinate,
      * and name.
      * 
-     * @param sprite - the PImage sprite of the Entity
-     * @param x - the x-coordinate of the Entity
-     * @param y - the y-coordinate of the Entity
-     * @param name - the name of the Entity
+     * @param sprite the PImage sprite of the Entity
+     * @param x the x-coordinate of the Entity
+     * @param y the y-coordinate of the Entity
+     * @param name the name of the Entity
      * 
      * @see GameObject#GameObject(PImage, int, int, Name)
      */
@@ -52,9 +52,9 @@ public abstract class Entity extends GameObject {
      * Initialises an Entity with the specified sprite, tile location, and
      * name. Its XY-coordinate will be randomised within the tile location.
      * 
-     * @param sprite - the PImage sprite of the Entity
-     * @param location - the tile location of the Entity
-     * @param name - the name of the Entity
+     * @param sprite the PImage sprite of the Entity
+     * @param location the tile location of the Entity
+     * @param name the name of the Entity
      * 
      * @see GameObject#GameObject(PImage, String, Name)
      */
@@ -75,7 +75,7 @@ public abstract class Entity extends GameObject {
      * Entity is overlapping on the horizontal axis with the specified
      * 'other' GameObject.
      * 
-     * @param other - the GameObject to be checked against for overlap
+     * @param other the GameObject to be checked against for overlap
      * @return true if this Entity overlaps on the horizontal axis with 'other'
      */
     protected abstract boolean isOverlappingHorizontally(GameObject other);
@@ -85,7 +85,7 @@ public abstract class Entity extends GameObject {
      * Entity is overlapping on the vertical axis with the specified
      * 'other' GameObject.
      * 
-     * @param other - the GameObject to be checked against for overlap
+     * @param other the GameObject to be checked against for overlap
      * @return true if this Entity overlaps on the vertical axis with 'other'
      */
     protected abstract boolean isOverlappingVertically(GameObject other);
@@ -94,26 +94,6 @@ public abstract class Entity extends GameObject {
      * An abstract method which governs the way this Entity moves each frame.
      */
     protected abstract void move();
-
-    /**
-     * Checks whether this Entity is overlapping the specified
-     * GameObject 'other'.
-     * <p>
-     * Checking mechanism for overlap depends on this Entity's
-     * implementation of the abstract methods which check for vertical and
-     * horizontal overlaps. 
-     * 
-     * @param other - the GameObject to be checked against for overlap
-     * @return true if this Entity overlaps with 'other'
-     * 
-     * @see #isOverlappingHorizontally(GameObject)
-     * @see #isOverlappingVertically(GameObject)
-     */
-    public boolean isOverlapping(GameObject other) {
-
-        return (isOverlappingHorizontally(other) &&
-                isOverlappingVertically(other));
-    }
 
     /**
      * Retrieves the current speed of this Entity.
@@ -126,6 +106,26 @@ public abstract class Entity extends GameObject {
     }
 
     /**
+     * Checks whether this Entity is overlapping the specified
+     * GameObject 'other'.
+     * <p>
+     * Checking mechanism for overlap depends on this Entity's
+     * implementation of the abstract methods which check for vertical and
+     * horizontal overlaps. 
+     * 
+     * @param other the GameObject to be checked against for overlap
+     * @return true if this Entity overlaps with 'other'
+     * 
+     * @see #isOverlappingHorizontally(GameObject)
+     * @see #isOverlappingVertically(GameObject)
+     */
+    public boolean isOverlapping(GameObject other) {
+
+        return (isOverlappingHorizontally(other) &&
+                isOverlappingVertically(other));
+    }
+
+    /**
      * Checks whether this Entity is overlapping any of the tiles in the
      * specified TileList 'otherTiles'.
      * <p>
@@ -133,7 +133,7 @@ public abstract class Entity extends GameObject {
      * implementation of the abstract methods which check for vertical and
      * horizontal overlaps.
      * 
-     * @param otherTiles - the TileList to be checked against for overlap
+     * @param otherTiles the TileList to be checked against for overlap
      * @return true if this Entity overlaps with at least one tile
      * inside 'otherTiles'
      * 
@@ -152,7 +152,7 @@ public abstract class Entity extends GameObject {
     /**
      * Sets the speed of this Entity to the specified value.
      * 
-     * @param speed - the speed to be set for this Entity
+     * @param speed the speed to be set for this Entity
      */
     public void setSpeed(int speed) {
 

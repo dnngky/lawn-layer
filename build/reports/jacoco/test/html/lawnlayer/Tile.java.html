@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Tile.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">lawnlayer</a> &gt; <a href="index.source.html" class="el_package">lawnlayer</a> &gt; <span class="el_source">Tile.java</span></div><h1>Tile.java</h1><pre class="source lang-java linenums">package lawnlayer;
+
+import lawnlayer.Info.Name;
+import processing.core.PImage;
+
+/**
+ * A subclass of GameObject for all tile objects in the game. This includes
+ * concrete tiles, grass tiles, border tiles, and path tiles.
+ */
+public class Tile extends GameObject {
+    
+    private int frameOfCollision;
+    private boolean isRed;
+    private Direction orientation;
+
+    /**
+     * Initiates a basic tile with no sprite nor name.
+     * 
+     * @see GameObject#GameObject()
+     */
+<span class="fc" id="L21">    public Tile() {</span>
+
+<span class="fc" id="L23">        sprite = null;</span>
+<span class="fc" id="L24">        name = Name.UNNAMED;</span>
+
+<span class="fc" id="L26">        orientation = Direction.NONE;</span>
+<span class="fc" id="L27">        isRed = false;</span>
+<span class="fc" id="L28">        frameOfCollision = 0;</span>
+<span class="fc" id="L29">    }</span>
+
+    /**
+     * Initiates a tile with the specified sprite, xy-coordinates, and name.
+     * 
+     * @param sprite the PImage sprite of the tile
+     * @param x the x-coordinate of the tile
+     * @param y the y-coordinate of the tile
+     * @param name the name of the tile
+     * 
+     * @see GameObject#GameObject(PImage, int, int, Name)
+     */
+    public Tile(PImage sprite, int x, int y, Name name) {
+
+<span class="fc" id="L43">        super(sprite, x, y, name);</span>
+
+<span class="fc" id="L45">        orientation = Direction.NONE;</span>
+<span class="fc" id="L46">        isRed = false;</span>
+<span class="fc" id="L47">        frameOfCollision = 0;</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * Overrides the default 'equals' method of the Object superclass.
+     * Tile objects are considered 'equal' if they share the same
+     * x-y coordinates.
+     */
+    @Override
+    public boolean equals(Object other) {
+
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (this == other)</span>
+<span class="fc" id="L59">            return true;</span>
+
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (!(other instanceof Tile))</span>
+<span class="nc" id="L62">            return false;</span>
+
+<span class="fc" id="L64">        Tile otherTile = (Tile) other;</span>
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        return (this.getX() == otherTile.getX() &amp;&amp;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                this.getY() == otherTile.getY());</span>
+    }
+
+    /**
+     * Retrieves the frame in which this Tile was collided.
+     * 
+     * @return the frame of collision
+     */
+    public int getFrameOfCollision() {
+
+<span class="nc" id="L77">        return frameOfCollision;</span>
+    }
+
+    /**
+     * Retrieves the orientation of this Tile.
+     * 
+     * @return this Tile's orientation
+     */
+    public Direction getOrientation() {
+
+<span class="fc" id="L87">        return orientation;</span>
+    }
+
+    /**
+     * Retrieves a Tile adjacent to this Tile in the specified direction.
+     * The adjacent Tile shares the same sprite and name as this Tile.
+     * Its orientation is set to the direction in which it is adjacent
+     * to this Tile.
+     * 
+     * @param direction the direction of the adjacent Tile
+     * @return a new adjacent Tile
+     */
+    public Tile getAdjacentTile(Direction direction) {
+
+        Tile adjacentTile;
+
+<span class="pc bpc" id="L103" title="1 of 5 branches missed.">        switch (direction) {</span>
+
+            case UP:
+<span class="fc" id="L106">                adjacentTile = new Tile(sprite, x, y - SIZE, name);</span>
+<span class="fc" id="L107">                adjacentTile.setOrientation(Direction.UP);</span>
+<span class="fc" id="L108">                break;</span>
+            
+            case DOWN:
+<span class="fc" id="L111">                adjacentTile = new Tile(sprite, x, y + SIZE, name);</span>
+<span class="fc" id="L112">                adjacentTile.setOrientation(Direction.DOWN);</span>
+<span class="fc" id="L113">                break;</span>
+            
+            case LEFT:
+<span class="fc" id="L116">                adjacentTile = new Tile(sprite, x - SIZE, y, name);</span>
+<span class="fc" id="L117">                adjacentTile.setOrientation(Direction.LEFT);</span>
+<span class="fc" id="L118">                break;</span>
+            
+            case RIGHT:
+<span class="fc" id="L121">                adjacentTile = new Tile(sprite, x + SIZE, y, name);</span>
+<span class="fc" id="L122">                adjacentTile.setOrientation(Direction.RIGHT);</span>
+<span class="fc" id="L123">                break;</span>
+
+            default:
+<span class="nc" id="L126">                adjacentTile = new Tile(sprite, x, y, name);</span>
+                break;
+        }
+<span class="fc" id="L129">        return adjacentTile;</span>
+    }
+
+    /**
+     * Retrieves a list of Tiles adjacent to this Tile in all four
+     * directions.
+     * 
+     * @return a TileList of four adjacent tiles
+     * 
+     * @see #getAdjacentTile(Direction)
+     */
+    public TileList getAdjacentTiles() {
+
+<span class="fc" id="L142">        Tile top = getAdjacentTile(Direction.UP);</span>
+<span class="fc" id="L143">        Tile bottom = getAdjacentTile(Direction.DOWN);</span>
+<span class="fc" id="L144">        Tile left = getAdjacentTile(Direction.LEFT);</span>
+<span class="fc" id="L145">        Tile right = getAdjacentTile(Direction.RIGHT);</span>
+
+<span class="fc" id="L147">        return new TileList(new Tile[] {top, bottom, left, right});</span>
+    }
+
+    /**
+     * Checks whether this Tile is adjacent to the specified Tile 'other'.
+     * 
+     * @param other the Tile to be checked for adjacency with this Tile
+     * @return true if this Tile is adjacent to 'other'
+     */
+    public boolean isAdjacentTo(Tile other) {
+
+<span class="pc bpc" id="L158" title="1 of 4 branches missed.">        return (Math.abs(x - other.getX()) == SIZE &amp;&amp; y == other.getY() ||</span>
+<span class="pc bpc" id="L159" title="1 of 4 branches missed.">                Math.abs(y - other.getY()) == SIZE &amp;&amp; x == other.getX());</span>
+    }
+
+    /**
+     * Checks whether this (path) Tile is red (i.e., it has been collided). 
+     * 
+     * @return true if this Tile is red
+     */
+    public boolean isRed() {
+
+<span class="nc" id="L169">        return isRed;</span>
+    }
+
+    /**
+     * Checks if this Tile is floating around the specified otherTiles.
+     * &lt;p&gt;
+     * Retrieves the adjacent tiles of this Tile. Then, returns true
+     * if none of the adjacent tiles are contained in the otherTiles.
+     * Returns false otherwise.
+     * 
+     * @param otherTiles the TileList in which this Tile is to be checked
+     * against for floating
+     * @return true if this Tile is floating
+     */
+    public boolean isFloatingAround(TileList otherTiles) {
+
+<span class="fc" id="L185">        Tile top = getAdjacentTile(Direction.UP);</span>
+<span class="fc" id="L186">        Tile bottom = getAdjacentTile(Direction.DOWN);</span>
+<span class="fc" id="L187">        Tile left = getAdjacentTile(Direction.LEFT);</span>
+<span class="fc" id="L188">        Tile right = getAdjacentTile(Direction.RIGHT);</span>
+
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        return (!(otherTiles.contains(top) ||</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">                otherTiles.contains(bottom) ||</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">                otherTiles.contains(left) ||</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">                otherTiles.contains(right)));</span>
+    }
+
+    /**
+     * Checks whether this Tile is out of the map bounds (the map width
+     * and height are pre-defined).
+     * 
+     * @return true if this Tile is out of bounds
+     */
+    public boolean isOutOfBounds() {
+
+<span class="pc bpc" id="L204" title="6 of 8 branches missed.">        return (x &lt; 0 || x &gt; (Info.WIDTH - SIZE) ||</span>
+                y &lt; Info.TOPBAR || y &gt; (Info.HEIGHT - SIZE));
+    }
+
+    /**
+     * Sets the orientation of this Tile to the specified orientation.
+     * 
+     * @param orientation the orientation to be set to for this Tile 
+     */
+    public void setOrientation(Direction orientation) {
+
+<span class="fc" id="L215">        this.orientation = orientation;</span>
+<span class="fc" id="L216">    }</span>
+
+    /**
+     * Turns this (green path) Tile into a red one.
+     * &lt;p&gt;
+     * Sets the sprite of the Tile to the specified red path sprite,
+     * sets the frame of collision to the specified frameCount, and
+     * updates isRed to true.
+     * 
+     * @param redPathSprite the PImage sprite this Tile is to be set to
+     * @param frameCount the frame this Tile's frame of collision is to
+     * be set to
+     */
+    public void turnRed(PImage redPathSprite, int frameCount) {
+
+<span class="nc" id="L231">        sprite = redPathSprite;</span>
+<span class="nc" id="L232">        frameOfCollision = frameCount;</span>
+<span class="nc" id="L233">        isRed = true;</span>
+<span class="nc" id="L234">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

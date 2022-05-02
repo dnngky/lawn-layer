@@ -9,9 +9,9 @@ import lawnlayer.Info.Name;
 import processing.core.PImage;
 
 /**
- * A subclass of Entity governing the behaviours of the player. As there
- * should only ever be one player in the game, this has been set up as a
- * singleton class.
+ * A singleton subclass of Entity governing the behaviours of the player.
+ * As there should only ever be one player in the game, this has been set
+ * up as a singleton class.
  */
 public class Player extends Entity {
 
@@ -23,12 +23,12 @@ public class Player extends Entity {
     /**
      * The xy-coordinate of the player's default spawn point.
      */
-    public static final List<Integer> SPAWNPOINT =
+    private static final List<Integer> SPAWNPOINT =
         Collections.unmodifiableList(Arrays.asList(0, Info.TOPBAR));
     /**
      * The number of allowed delayed key presses.
      */
-    public static final int MAXQUEUESIZE = 2;
+    private static final int MAXQUEUESIZE = 2;
     
     /**
      * Player's current direction of movement.
@@ -68,7 +68,7 @@ public class Player extends Entity {
      * Initialises Player with the specified sprite. The pre-defined
      * XY-coordinate of the Player's spawn point is used.
      * 
-     * @param sprite - the PImage sprite of the Player
+     * @param sprite the PImage sprite of the Player
      */
     private Player(PImage sprite) {
 
@@ -87,9 +87,9 @@ public class Player extends Entity {
     /**
      * Initialises Player with the specified sprite and XY-coordinate.
      * 
-     * @param sprite - the PImage sprite of the Player
-     * @param x - the x-coordinate of the Player
-     * @param y - the y-coordinate of the Player
+     * @param sprite the PImage sprite of the Player
+     * @param x the x-coordinate of the Player
+     * @param y the y-coordinate of the Player
      */
     private Player(PImage sprite, int x, int y) {
 
@@ -108,7 +108,7 @@ public class Player extends Entity {
      * A 'static constructor' for Player. If multiple instantiation of Player
      * is attempted, an exception is thrown.
      * 
-     * @param sprite - the PImage sprite of the Player
+     * @param sprite the PImage sprite of the Player
      * @return a single instance of Player
      * 
      * @see Player#Player(PImage)
@@ -128,9 +128,9 @@ public class Player extends Entity {
      * A 'static constructor' for Player. If multiple instantiation of Player
      * is attempted, an exception is thrown.
      * 
-     * @param sprite - the PImage sprite of the Player
-     * @param x - the x-coordinate of the Player
-     * @param y - the y-coordinate of the Player
+     * @param sprite the PImage sprite of the Player
+     * @param x the x-coordinate of the Player
+     * @param y the y-coordinate of the Player
      * @return a single instance of Player
      * 
      * @see #Player(PImage, int, int)
@@ -147,13 +147,22 @@ public class Player extends Entity {
     }
 
     /**
+     * Removes the single instance of Player.
+     */
+    public static void removePlayer() {
+
+        if (player != null)
+            player = null;
+    }
+
+    /**
      * Creates a new path tile as Player moves on soil.
      * <p>
      * Checks if Player is moving on soil and is exactly on a tile space.
      * If it is, creates and returns a new Path tile at its current
      * XY-coordinate.
      * 
-     * @param greenPathSprite - the PImage of the path to be created
+     * @param greenPathSprite the PImage of the path to be created
      * @return a new path Tile
      */
     public Tile createPath(PImage greenPathSprite) {
@@ -198,6 +207,36 @@ public class Player extends Entity {
     }
 
     /**
+     * Retrieves the tile Player is overlapping from the specified
+     * TileList 'otherTiles'.
+     * <p>
+     * Loops through 'otherTiles' and for each tile checks if Player
+     * is overlapping it. If true, set overlappedTile to that Tile
+     * and returns overlappedTile. If no tiles are found to be
+     * overlapped by Player, return null.
+     * 
+     * @param otherTiles the TileList to be checked against for
+     * overlap by Player
+     * @return the overlapped Tile
+     * 
+     * @see #isOverlappingHorizontally(GameObject)
+     * @see #isOverlappingVertically(GameObject)
+     * @see Entity#isOverlapping(GameObject)
+     */
+    public Tile getOverlappedTileFrom(TileList otherTiles) {
+
+        for (Tile tile : otherTiles.toList()) {
+            
+            if (isOverlapping(tile)) {
+
+                overlappedTile = tile;
+                return overlappedTile;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Retrieves the tile Player is overlapping from the possible specified
      * TileLists.
      * <p>
@@ -205,10 +244,10 @@ public class Player extends Entity {
      * to retrieve that tile. If the Player does not overlap any tile in all
      * of the TileLists, returns null. 
      * 
-     * @param otherTiles1 - the 1st TileList to be checked against for overlap
-     * @param otherTiles2 - the 2nd TileList to be checked against for overlap
-     * @param otherTiles3 - the 3rd TileList to be checked against for overlap
-     * @param otherTiles4 - the 4th TileList to be checked against for overlap
+     * @param otherTiles1 the 1st TileList to be checked against for overlap
+     * @param otherTiles2 the 2nd TileList to be checked against for overlap
+     * @param otherTiles3 the 3rd TileList to be checked against for overlap
+     * @param otherTiles4 the 4th TileList to be checked against for overlap
      * @return the overlapped Tile
      * 
      * @see #getOverlappedTileFrom(TileList)
@@ -391,6 +430,8 @@ public class Player extends Entity {
      * Else if overlappedTile is a concrete tile, disables isOnSoil and
      * enables isMovingTowardsTile.
      * 
+     * @param overlappedTile the Tile which is overlapped by Player
+     * 
      * @see #isOnSoil
      * @see #isMovingTowardsTile
      * @see #stopQueue
@@ -420,8 +461,8 @@ public class Player extends Entity {
     @Override
     protected void checkForOffMapMovement() {
 
-        int maxWidth = (Info.WIDTH - Info.SPRITESIZE);
-        int maxHeight = (Info.HEIGHT - Info.SPRITESIZE);
+        int maxWidth = (Info.WIDTH - SIZE);
+        int maxHeight = (Info.HEIGHT - SIZE);
 
         if (x < 0) {
             x = 0;
@@ -445,7 +486,7 @@ public class Player extends Entity {
      * Checks whether Player is overlapping on the horizontal axis with
      * the specified 'other' GameObject.
      * 
-     * @param other - the GameObject to be checked against for overlap
+     * @param other the GameObject to be checked against for overlap
      * @return true if Player overlaps on the horizontal axis with 'other'
      * 
      * @see Entity#isOverlappingHorizontally(GameObject)
@@ -461,7 +502,7 @@ public class Player extends Entity {
      * Checks whether Player is overlapping on the vertical axis with
      * the specified 'other' GameObject.
      * 
-     * @param other - the GameObject to be checked against for overlap
+     * @param other the GameObject to be checked against for overlap
      * @return true if Player overlaps on the vertical axis with 'other'
      * 
      * @see Entity#isOverlappingVertically(GameObject)
@@ -471,36 +512,6 @@ public class Player extends Entity {
 
         return (other.getY() <= getMidY() &&
                 getMidY() < (other.getY() + SIZE));
-    }
-
-    /**
-     * Retrieves the tile Player is overlapping from the specified
-     * TileList 'otherTiles'.
-     * <p>
-     * Loops through 'otherTiles' and for each tile checks if Player
-     * is overlapping it. If true, set overlappedTile to that Tile
-     * and returns overlappedTile. If no tiles are found to be
-     * overlapped by Player, return null.
-     * 
-     * @param otherTiles - the TileList to be checked against for
-     * overlap by Player
-     * @return the overlapped Tile
-     * 
-     * @see #isOverlappingHorizontally(GameObject)
-     * @see #isOverlappingVertically(GameObject)
-     * @see Entity#isOverlapping(GameObject)
-     */
-    private Tile getOverlappedTileFrom(TileList otherTiles) {
-
-        for (Tile tile : otherTiles.toList()) {
-            
-            if (isOverlapping(tile)) {
-
-                overlappedTile = tile;
-                return overlappedTile;
-            }
-        }
-        return null;
     }
 
     /**
@@ -519,7 +530,7 @@ public class Player extends Entity {
     /**
      * Moves Player downwards.
      * 
-     * @param positionTile - the Tile space Player will move to if
+     * @param positionTile the Tile space Player will move to if
      * isMovingTowardsTile is true
      * 
      * @see #isMovingTowardsTile
@@ -536,7 +547,7 @@ public class Player extends Entity {
     /**
      * Moves Player downwards and stops at the specified 'tile'.
      * 
-     * @param tile - the Tile space Player moves downwards to
+     * @param tile the Tile space Player moves downwards to
      * 
      * @see #stopMoving()
      */
@@ -564,7 +575,7 @@ public class Player extends Entity {
     /**
      * Moves Player leftwards.
      * 
-     * @param positionTile - the Tile space Player will move to if
+     * @param positionTile the Tile space Player will move to if
      * isMovingTowardsTile is true
      * 
      * @see #isMovingTowardsTile
@@ -581,7 +592,7 @@ public class Player extends Entity {
     /**
      * Moves Player leftwards and stops at the specified 'tile'.
      * 
-     * @param tile - the Tile space Player moves leftwards to
+     * @param tile the Tile space Player moves leftwards to
      * 
      * @see #stopMoving()
      */
@@ -609,7 +620,7 @@ public class Player extends Entity {
     /**
      * Moves Player rightwards.
      * 
-     * @param positionTile - the Tile space Player will move to if
+     * @param positionTile the Tile space Player will move to if
      * isMovingTowardsTile is true
      * 
      * @see #isMovingTowardsTile
@@ -626,7 +637,7 @@ public class Player extends Entity {
     /**
      * Moves Player rightwards and stops at the specified 'tile'.
      * 
-     * @param tile - the Tile space Player moves rightwards to
+     * @param tile the Tile space Player moves rightwards to
      * 
      * @see #stopMoving()
      */
@@ -654,7 +665,7 @@ public class Player extends Entity {
     /**
      * Moves Player upwards.
      * 
-     * @param positionTile - the Tile space Player will move to if
+     * @param positionTile the Tile space Player will move to if
      * isMovingTowardsTile is true
      * 
      * @see #isMovingTowardsTile
@@ -671,7 +682,7 @@ public class Player extends Entity {
     /**
      * Moves Player upwards and stops at the specified 'tile'.
      * 
-     * @param tile - the Tile space Player moves upwards to
+     * @param tile the Tile space Player moves upwards to
      * 
      * @see #stopMoving()
      */

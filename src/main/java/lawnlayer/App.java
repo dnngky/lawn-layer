@@ -15,15 +15,17 @@ import processing.data.JSONObject;
 import processing.data.JSONArray;
 import processing.core.PFont;
 
+/**
+ * The game engine.
+ */
 public class App extends PApplet {
-    
+
+    public final String configPath;
     /**
      * Duration of the display screen (seconds), which includes the
      * start, end, and level screen.
      */
-    public static final int DISPLAYSCREENDURATION = 3;
-
-    public final String configPath;
+    private static final int DISPLAYSCREENDURATION = 3;
     
     // Font and sprite images
 
@@ -136,6 +138,7 @@ public class App extends PApplet {
 
         // Initialise player and level
         
+        Player.removePlayer();
         player = Player.createPlayer(playerSprite);
 
         currentLevel = 0;
@@ -265,7 +268,7 @@ public class App extends PApplet {
     /**
      * Displays the win, lose, and level screen.
      * 
-     * @param type - the type of display screen
+     * @param type the type of display screen
      */
     private void displayScreen(String type) {
 
@@ -300,8 +303,8 @@ public class App extends PApplet {
     /**
      * Displays the information located at the top bar.
      * 
-     * @param percentageFilled - the percentage of tiles filled
-     * @param percentageGoal - the percentage of tiles required to be filled
+     * @param percentageFilled the percentage of tiles filled
+     * @param percentageGoal the percentage of tiles required to be filled
      */
     private void displayTopBarInfo(int percentageFilled, int percentageGoal) {
 
@@ -328,8 +331,8 @@ public class App extends PApplet {
      * into a TileList. After all of the file has been scanned, returns
      * the filled TileList.
      * 
-     * @param filename - the name of the text file to be scanned
-     * @param marker - the marker to be used to create tiles
+     * @param filename the name of the text file to be scanned
+     * @param marker the marker to be used to create tiles
      * @return a TileList of tiles created from the marker in the text file
      */
     private TileList fillFrom(String filename, char marker, Name tileName) {
@@ -348,7 +351,7 @@ public class App extends PApplet {
                 for (int j = 0; j < row.length(); j++) {
 
                     char c = row.charAt(j);
-                    int x = j * Info.SPRITESIZE;
+                    int x = j * GameObject.SIZE;
 
                     if (c == marker) {
                         Tile concreteTile =
@@ -356,7 +359,7 @@ public class App extends PApplet {
                         tiles.add(concreteTile);
                     }
                 }
-                y += Info.SPRITESIZE;
+                y += GameObject.SIZE;
             }
             scan.close();
         } catch (FileNotFoundException e) {
@@ -381,7 +384,7 @@ public class App extends PApplet {
      * <p>
      * This includes concrete tiles, enemies, and power ups.
      * 
-     * @param currentLevel - the level to initialise
+     * @param currentLevel the level to initialise
      */
     private void initialiseLevel(int currentLevel) {
 

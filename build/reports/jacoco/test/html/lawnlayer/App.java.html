@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>App.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">lawnlayer</a> &gt; <a href="index.source.html" class="el_package">lawnlayer</a> &gt; <span class="el_source">App.java</span></div><h1>App.java</h1><pre class="source lang-java linenums">package lawnlayer;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import lawnlayer.Info.Name;
+import processing.core.PApplet;
+import processing.core.PImage;
+import processing.data.JSONObject;
+import processing.data.JSONArray;
+import processing.core.PFont;
+
+/**
+ * The game engine.
+ */
+public class App extends PApplet {
+
+    public final String configPath;
+    /**
+     * Duration of the display screen (seconds), which includes the
+     * start, end, and level screen.
+     */
+    private static final int DISPLAYSCREENDURATION = 3;
+    
+    // Font and sprite images
+
+    private PFont font;
+
+    private PImage soil;
+    private PImage concreteSprite;
+    private PImage greenPathSprite;
+    private PImage redPathSprite;
+    private PImage wormSprite;
+    private PImage beetleSprite;
+
+    private PImage heartSprite;
+    private PImage freezeSprite;
+    private PImage boostSprite;
+    private PImage invincibleSprite;
+    private PImage shieldSprite;
+
+    // Config information
+
+    private Map&lt;Integer,String&gt; outlays;
+    private Map&lt;Integer,List&lt;Enemy&gt;&gt; enemies;
+    private Map&lt;Integer,Float&gt; goals;
+    private int lives;
+
+    // Level-specific information
+
+    private int currentLevel;
+
+    private int displayScreenFrameCount;
+
+    private int numOfFillables;
+    private double fillGoal;
+
+    private TileList borderTiles;
+    private TileList concreteTiles;
+    private TileList dirtTiles;
+    private TileList grassTiles;
+    private TileList pathTiles;
+
+    private List&lt;Enemy&gt; levelEnemies;
+    private Player player;
+
+    private Boost boost;
+    private Freeze freeze;
+    private Invincible invincible;
+    private Shield shield;
+
+<span class="fc" id="L77">    public App() {</span>
+
+<span class="fc" id="L79">        this.configPath = &quot;config.json&quot;;</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     * Initialises the setting of the window size.
+     */
+    @Override
+    public void settings() {
+
+<span class="fc" id="L88">        size(Info.WIDTH, Info.HEIGHT);</span>
+<span class="fc" id="L89">    }</span>
+
+    /**
+     * Loads all resources such as images. Initialises the elements such as the
+     * player, enemies and map elements.
+     */
+    @Override
+    public void setup() {
+
+<span class="fc" id="L98">        frameRate(Info.FPS);</span>
+
+        // Load images and fonts during setup
+
+<span class="fc" id="L102">        font = createFont(this.getClass().getResource(&quot;upheavtt.ttf&quot;).getPath(), 50, false);</span>
+
+<span class="fc" id="L104">        soil = loadImage(this.getClass().getResource(&quot;background.png&quot;).getPath());</span>
+<span class="fc" id="L105">        concreteSprite = loadImage(this.getClass().getResource(&quot;concrete_tile.png&quot;).getPath());</span>
+<span class="fc" id="L106">        greenPathSprite = loadImage(this.getClass().getResource(&quot;green_path.png&quot;).getPath());</span>
+<span class="fc" id="L107">        redPathSprite = loadImage(this.getClass().getResource(&quot;red_path.png&quot;).getPath());</span>
+
+<span class="fc" id="L109">        wormSprite = loadImage(this.getClass().getResource(&quot;worm.png&quot;).getPath());</span>
+<span class="fc" id="L110">        beetleSprite = loadImage(this.getClass().getResource(&quot;beetle.png&quot;).getPath());</span>
+
+<span class="fc" id="L112">        heartSprite = loadImage(this.getClass().getResource(&quot;heart.png&quot;).getPath());</span>
+<span class="fc" id="L113">        freezeSprite = loadImage(this.getClass().getResource(&quot;freeze.png&quot;).getPath());</span>
+<span class="fc" id="L114">        boostSprite = loadImage(this.getClass().getResource(&quot;boost.png&quot;).getPath());</span>
+<span class="fc" id="L115">        invincibleSprite = loadImage(this.getClass().getResource(&quot;invincible.png&quot;).getPath());</span>
+<span class="fc" id="L116">        shieldSprite = loadImage(this.getClass().getResource(&quot;shield.png&quot;).getPath());</span>
+
+<span class="fc" id="L118">        PImage grassSprite = loadImage(this.getClass().getResource(&quot;grass_tile.png&quot;).getPath());</span>
+<span class="fc" id="L119">        PImage playerSprite = loadImage(this.getClass().getResource(&quot;ball.png&quot;).getPath());</span>
+
+        // Initialise config information containers
+
+<span class="fc" id="L123">        outlays = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L124">        enemies = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L125">        goals = new HashMap&lt;&gt;();</span>
+
+        // Initialise tile containers
+
+<span class="fc" id="L129">        borderTiles = new TileList(grassSprite, Name.GRASS);</span>
+<span class="fc" id="L130">        concreteTiles = new TileList(concreteSprite, Name.CONCRETE);</span>
+<span class="fc" id="L131">        dirtTiles = new TileList();</span>
+<span class="fc" id="L132">        grassTiles = new TileList(grassSprite, Name.GRASS);</span>
+<span class="fc" id="L133">        pathTiles = new TileList(greenPathSprite, Name.PATH);</span>
+
+        // Load JSON file
+
+<span class="fc" id="L137">        loadConfigFile();</span>
+
+        // Initialise player and level
+        
+<span class="fc" id="L141">        Player.removePlayer();</span>
+<span class="fc" id="L142">        player = Player.createPlayer(playerSprite);</span>
+
+<span class="fc" id="L144">        currentLevel = 0;</span>
+<span class="fc" id="L145">        fillGoal = 0.0;</span>
+<span class="fc" id="L146">    }</span>
+
+    /**
+     * Draws all elements in the game by current frame.
+     */
+    @Override
+    public void draw() {
+
+<span class="fc" id="L154">        background(soil);</span>
+<span class="fc" id="L155">        textFont(font);</span>
+
+<span class="fc" id="L157">        int percentageFilled = (int) (getFilledPercentage() * 100);</span>
+<span class="fc" id="L158">        int percentageGoal = (int) (fillGoal * 100);</span>
+        
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (percentageGoal != 0.0) {</span>
+
+<span class="nc" id="L162">            displayTopBarInfo(percentageFilled, percentageGoal);</span>
+
+<span class="nc" id="L164">            updatePlayer();</span>
+<span class="nc" id="L165">            updateEnemies();</span>
+<span class="nc" id="L166">            updateTiles();</span>
+<span class="nc" id="L167">            updatePowerUps();</span>
+
+<span class="nc" id="L169">            concreteTiles.drawTiles(this);</span>
+<span class="nc" id="L170">            borderTiles.drawTiles(this);</span>
+<span class="nc" id="L171">            grassTiles.drawTiles(this);</span>
+<span class="nc" id="L172">            pathTiles.drawTiles(this);</span>
+
+<span class="nc" id="L174">            player.draw(this);</span>
+<span class="nc" id="L175">            levelEnemies.forEach(enemy -&gt; enemy.draw(this));</span>
+            
+<span class="nc" id="L177">            boost.draw(this);</span>
+<span class="nc" id="L178">            freeze.draw(this);</span>
+<span class="nc" id="L179">            invincible.draw(this);</span>
+<span class="nc" id="L180">            shield.draw(this);</span>
+        }
+<span class="pc bpc" id="L182" title="3 of 4 branches missed.">        if (fillGoal == 0 ||</span>
+            percentageFilled &gt;= percentageGoal) {
+
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">            if (displayScreenFrameCount == 0) {</span>
+<span class="fc" id="L186">                deactivateAllPowerUps();</span>
+<span class="fc" id="L187">                currentLevel++;</span>
+            }
+<span class="fc" id="L189">            displayScreen(&quot;LEVEL&quot;);</span>
+        }
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (lives == 0)</span>
+<span class="nc" id="L192">            displayScreen(&quot;LOSE&quot;);</span>
+        
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (currentLevel &gt; goals.size())</span>
+<span class="nc" id="L195">            displayScreen(&quot;WIN&quot;);</span>
+        
+<span class="pc bpc" id="L197" title="2 of 4 branches missed.">        if (displayScreenFrameCount &gt; 0 &amp;&amp;</span>
+            frameCount - displayScreenFrameCount ==
+                Info.FPS * DISPLAYSCREENDURATION) {
+            
+<span class="nc" id="L201">            clearAllTiles();</span>
+
+<span class="nc bnc" id="L203" title="All 4 branches missed.">            if (lives == 0 || currentLevel &gt; goals.size()) {</span>
+<span class="nc" id="L204">                exit();</span>
+            }
+            else {
+<span class="nc" id="L207">                initialiseLevel(currentLevel);</span>
+<span class="nc" id="L208">                player.respawn();</span>
+<span class="nc" id="L209">                displayScreenFrameCount = 0;</span>
+            }
+        }
+<span class="fc" id="L212">    }</span>
+
+    /**
+     * Changes ball's direction when player presses a keyboard key.
+     */
+    @Override
+    public void keyPressed() {
+<span class="nc bnc" id="L219" title="All 5 branches missed.">        switch (keyCode) {</span>
+            case 37:
+<span class="nc" id="L221">                player.pressLeft();</span>
+<span class="nc" id="L222">                break;</span>
+            case 38:
+<span class="nc" id="L224">                player.pressUp();</span>
+<span class="nc" id="L225">                break;</span>
+            case 39:
+<span class="nc" id="L227">                player.pressRight();</span>
+<span class="nc" id="L228">                break;</span>
+            case 40:
+<span class="nc" id="L230">                player.pressDown();</span>
+<span class="nc" id="L231">                break;</span>
+            default:
+                break;
+        }
+<span class="nc" id="L235">    }</span>
+
+    /**
+     * Clears all tile containers.
+     */
+    private void clearAllTiles() {
+
+<span class="nc" id="L242">        concreteTiles.clear();</span>
+<span class="nc" id="L243">        borderTiles.clear();</span>
+<span class="nc" id="L244">        dirtTiles.clear();</span>
+<span class="nc" id="L245">        grassTiles.clear();</span>
+<span class="nc" id="L246">        pathTiles.clear();</span>
+<span class="nc" id="L247">    }</span>
+
+    /**
+     * Deactivates all power ups.
+     */
+    private void deactivateAllPowerUps() {
+
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (boost != null)</span>
+<span class="nc" id="L255">            boost.deactivateOn(player);</span>
+        
+<span class="pc bpc" id="L257" title="3 of 4 branches missed.">        if (freeze != null &amp;&amp; levelEnemies != null)</span>
+<span class="nc" id="L258">            levelEnemies.forEach(freeze::deactivateOn);</span>
+        
+<span class="pc bpc" id="L260" title="3 of 4 branches missed.">        if (invincible != null &amp;&amp; levelEnemies != null) {</span>
+<span class="nc" id="L261">            invincible.deactivateOn(player);</span>
+<span class="nc" id="L262">            levelEnemies.forEach(invincible::deactivateOn);</span>
+        }
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (shield != null)</span>
+<span class="nc" id="L265">            shield.deactivateOn(player);</span>
+<span class="fc" id="L266">    }</span>
+
+    /**
+     * Displays the win, lose, and level screen.
+     * 
+     * @param type the type of display screen
+     */
+    private void displayScreen(String type) {
+
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">        if (type.equals(&quot;WIN&quot;)) {</span>
+
+<span class="nc" id="L277">            background(107, 142, 35);</span>
+<span class="nc" id="L278">            fill(255);</span>
+<span class="nc" id="L279">            textAlign(CENTER, CENTER);</span>
+<span class="nc" id="L280">            text(&quot;You Win!&quot;, 640, 360);</span>
+        }
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">        if (type.equals(&quot;LOSE&quot;)) {</span>
+
+<span class="nc" id="L284">            background(0);</span>
+<span class="nc" id="L285">            fill(255);</span>
+<span class="nc" id="L286">            textAlign(CENTER, CENTER);</span>
+<span class="nc" id="L287">            text(&quot;Game Over&quot;, 640, 360);</span>
+        }
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">        if (type.equals(&quot;LEVEL&quot;)) {</span>
+
+<span class="fc" id="L291">            background(205,133,63);</span>
+<span class="fc" id="L292">            fill(255);</span>
+<span class="fc" id="L293">            textAlign(CENTER, CENTER);</span>
+<span class="fc" id="L294">            text(&quot;Level &quot; + currentLevel, 640, 300);</span>
+            
+<span class="fc" id="L296">            image(heartSprite, 570, 340);</span>
+<span class="fc" id="L297">            text(&quot;x &quot; + lives, 665, 351);</span>
+        }
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">        if (displayScreenFrameCount == 0)</span>
+<span class="fc" id="L300">            displayScreenFrameCount = frameCount;</span>
+<span class="fc" id="L301">    }</span>
+
+    /**
+     * Displays the information located at the top bar.
+     * 
+     * @param percentageFilled the percentage of tiles filled
+     * @param percentageGoal the percentage of tiles required to be filled
+     */
+    private void displayTopBarInfo(int percentageFilled, int percentageGoal) {
+
+<span class="nc" id="L311">        fill(0);</span>
+<span class="nc" id="L312">        textAlign(RIGHT, CENTER);</span>
+<span class="nc" id="L313">        text(percentageFilled + &quot;% | &quot; + percentageGoal + &quot;%&quot;, 1250, 35);</span>
+
+<span class="nc" id="L315">        textAlign(CENTER, CENTER);</span>
+<span class="nc" id="L316">        text(&quot;Level &quot; + currentLevel, 640, 35);</span>
+
+<span class="nc" id="L318">        int x = 30;</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        for (int n = 0; n &lt; lives; n++) {</span>
+<span class="nc" id="L320">            image(heartSprite, x, 25);</span>
+<span class="nc" id="L321">            x += 50;</span>
+        }
+<span class="nc" id="L323">    }</span>
+
+    /**
+     * Scans a text file and creates a TileList of tiles based on the
+     * specified marker.
+     * &lt;p&gt;
+     * Scans through the text file and looks for the marker. Creates a
+     * tile at the same relative XY-coordinate as the marker and adds it
+     * into a TileList. After all of the file has been scanned, returns
+     * the filled TileList.
+     * 
+     * @param filename the name of the text file to be scanned
+     * @param marker the marker to be used to create tiles
+     * @return a TileList of tiles created from the marker in the text file
+     */
+    private TileList fillFrom(String filename, char marker, Name tileName) {
+
+<span class="nc" id="L340">        File outlayFile = new File(filename);</span>
+<span class="nc" id="L341">        TileList tiles = new TileList(concreteSprite, tileName);</span>
+
+        try {
+<span class="nc" id="L344">            Scanner scan = new Scanner(outlayFile);</span>
+<span class="nc" id="L345">            int y = 80;</span>
+
+<span class="nc bnc" id="L347" title="All 2 branches missed.">            while (scan.hasNextLine()) {</span>
+
+<span class="nc" id="L349">                String row = scan.nextLine();</span>
+
+<span class="nc bnc" id="L351" title="All 2 branches missed.">                for (int j = 0; j &lt; row.length(); j++) {</span>
+
+<span class="nc" id="L353">                    char c = row.charAt(j);</span>
+<span class="nc" id="L354">                    int x = j * GameObject.SIZE;</span>
+
+<span class="nc bnc" id="L356" title="All 2 branches missed.">                    if (c == marker) {</span>
+<span class="nc" id="L357">                        Tile concreteTile =</span>
+                            new Tile(concreteSprite, x, y, tileName);
+<span class="nc" id="L359">                        tiles.add(concreteTile);</span>
+                    }
+                }
+<span class="nc" id="L362">                y += GameObject.SIZE;</span>
+<span class="nc" id="L363">            }</span>
+<span class="nc" id="L364">            scan.close();</span>
+<span class="nc" id="L365">        } catch (FileNotFoundException e) {</span>
+<span class="nc" id="L366">            e.printStackTrace();</span>
+<span class="nc" id="L367">        }</span>
+<span class="nc" id="L368">        return tiles;</span>
+    }
+
+    /**
+     * Calculates the current percentage of tiles filled.
+     * 
+     * @return the percentage of tiles filled
+     */
+    private double getFilledPercentage() {
+
+<span class="fc" id="L378">        return ((double) (borderTiles.size() + grassTiles.size()) /</span>
+                numOfFillables);
+    }
+
+    /**
+     * Initialises the elements of the specifed 'currentLevel'.
+     * &lt;p&gt;
+     * This includes concrete tiles, enemies, and power ups.
+     * 
+     * @param currentLevel the level to initialise
+     */
+    private void initialiseLevel(int currentLevel) {
+
+        try {
+
+<span class="nc" id="L393">            String currentOutlay = outlays.get(currentLevel);</span>
+<span class="nc" id="L394">            concreteTiles = fillFrom(currentOutlay, 'X', Name.CONCRETE);</span>
+<span class="nc" id="L395">            dirtTiles = fillFrom(currentOutlay, ' ', Name.DIRT);</span>
+
+<span class="nc" id="L397">            numOfFillables = dirtTiles.size();</span>
+<span class="nc" id="L398">            fillGoal = goals.get(currentLevel);</span>
+
+<span class="nc" id="L400">            levelEnemies = enemies.get(currentLevel);</span>
+<span class="nc" id="L401">            levelEnemies.forEach(enemy -&gt;</span>
+<span class="nc" id="L402">                enemy.checkIfIsStuckInside(concreteTiles));</span>
+
+<span class="nc" id="L404">            Boost.removeBoost();</span>
+<span class="nc" id="L405">            boost = Boost.createBoost(boostSprite, Name.BOOST);</span>
+<span class="nc" id="L406">            boost.setStartingFrameCount(frameCount);</span>
+
+<span class="nc" id="L408">            Freeze.removeFreeze();</span>
+<span class="nc" id="L409">            freeze = Freeze.createFreeze(freezeSprite, Name.FREEZE);</span>
+<span class="nc" id="L410">            freeze.setStartingFrameCount(frameCount);</span>
+
+<span class="nc" id="L412">            Invincible.removeInvincible();</span>
+<span class="nc" id="L413">            invincible = Invincible.createInvincible</span>
+<span class="nc" id="L414">                (invincibleSprite, Name.INVINCIBLE);</span>
+<span class="nc" id="L415">            invincible.setStartingFrameCount(frameCount);</span>
+
+<span class="nc" id="L417">            Shield.removeShield();</span>
+<span class="nc" id="L418">            shield = Shield.createShield(shieldSprite, Name.SHIELD);</span>
+<span class="nc" id="L419">            shield.setStartingFrameCount(frameCount);</span>
+        }
+<span class="nc" id="L421">        catch (NullPointerException e) {</span>
+
+<span class="nc" id="L423">            concreteTiles = new TileList();</span>
+<span class="nc" id="L424">            dirtTiles = new TileList();</span>
+
+<span class="nc" id="L426">            numOfFillables = 0;</span>
+<span class="nc" id="L427">            fillGoal = 0;</span>
+
+<span class="nc" id="L429">            levelEnemies = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L430">        }</span>
+<span class="nc" id="L431">    }</span>
+
+    /**
+     * Loads in the config information from the config file into
+     * their respective containers.
+     */
+    private void loadConfigFile() {
+
+<span class="fc" id="L439">        JSONObject values = loadJSONObject(configPath);</span>
+<span class="fc" id="L440">        JSONArray levels = values.getJSONArray(&quot;levels&quot;);</span>
+
+<span class="fc bfc" id="L442" title="All 2 branches covered.">        for (int i = 0; i &lt; levels.size(); i++) {</span>
+
+<span class="fc" id="L444">            JSONObject level = levels.getJSONObject(i);</span>
+
+<span class="fc" id="L446">            outlays.put(i + 1, level.getString(&quot;outlay&quot;));</span>
+
+<span class="fc" id="L448">            JSONArray enemyArray = level.getJSONArray(&quot;enemies&quot;);</span>
+<span class="fc" id="L449">            List&lt;Enemy&gt; enemyList = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L451" title="All 2 branches covered.">            for (int j = 0; j &lt; enemyArray.size(); j++) {</span>
+
+<span class="fc" id="L453">                JSONObject enemy = enemyArray.getJSONObject(j);</span>
+
+                PImage sprite;
+                Name type;
+
+<span class="fc bfc" id="L458" title="All 2 branches covered.">                if (enemy.getInt(&quot;type&quot;) == 0) {</span>
+<span class="fc" id="L459">                    sprite = wormSprite;</span>
+<span class="fc" id="L460">                    type = Name.WORM;</span>
+                } else {
+<span class="fc" id="L462">                    sprite = beetleSprite;</span>
+<span class="fc" id="L463">                    type = Name.BEETLE;</span>
+                }
+<span class="fc" id="L465">                String spawn = enemy.getString(&quot;spawn&quot;);</span>
+
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">                if (spawn.equals(&quot;random&quot;))</span>
+<span class="fc" id="L468">                    enemyList.add(new Enemy(sprite, type));</span>
+                else
+<span class="nc" id="L470">                    enemyList.add(new Enemy(sprite, spawn, type));</span>
+            }
+<span class="fc" id="L472">            enemies.put(i + 1, enemyList);</span>
+
+<span class="fc" id="L474">            goals.put(i + 1, level.getFloat(&quot;goal&quot;));</span>
+        }
+<span class="fc" id="L476">        lives = values.getInt(&quot;lives&quot;);</span>
+<span class="fc" id="L477">    }</span>
+
+    /**
+     * Updates all Enemies' behaviours per frame, which includes
+     * collisions and movements, and killing off Player.
+     */
+    private void updateEnemies() {
+
+<span class="nc" id="L485">        int enemySpeed = levelEnemies.get(0).getSpeed();</span>
+
+<span class="nc bnc" id="L487" title="All 2 branches missed.">        for (int i = 0; i &lt; enemySpeed; i++) {</span>
+        
+<span class="nc bnc" id="L489" title="All 2 branches missed.">            for (Enemy enemy : levelEnemies) {</span>
+
+<span class="nc" id="L491">                enemy.checkForCollisionWith(concreteTiles, grassTiles, false);</span>
+<span class="nc" id="L492">                enemy.checkForCollisionWith(pathTiles, grassTiles, false);</span>
+<span class="nc" id="L493">                enemy.checkForCollisionWith(borderTiles, grassTiles, false);</span>
+
+<span class="nc bnc" id="L495" title="All 2 branches missed.">                if (enemy.hasCollidedWith(pathTiles) &amp;&amp;</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">                    !player.isShielded()) {</span>
+
+<span class="nc" id="L498">                    Tile collidedTile = enemy.getCollidedTile();</span>
+<span class="nc" id="L499">                    collidedTile.turnRed(redPathSprite, frameCount);</span>
+                }
+<span class="nc bnc" id="L501" title="All 2 branches missed.">                if (player.isOverlapping(enemy) &amp;&amp;</span>
+<span class="nc bnc" id="L502" title="All 2 branches missed.">                    !player.isShielded()) {</span>
+                    
+<span class="nc" id="L504">                    player.respawn();</span>
+<span class="nc" id="L505">                    pathTiles.clear();</span>
+<span class="nc" id="L506">                    deactivateAllPowerUps();</span>
+<span class="nc" id="L507">                    lives--;</span>
+                }
+<span class="nc" id="L509">                enemy.move();</span>
+<span class="nc" id="L510">            }</span>
+        }
+<span class="nc" id="L512">    }</span>
+
+    /**
+     * Updates all Tiles' behaviours per frame, which includes
+     * filling regions and propagating red paths.
+     */
+    private void updateTiles() {
+
+<span class="nc bnc" id="L520" title="All 2 branches missed.">        if (player.isOnSafeTile() &amp;&amp;</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">            !pathTiles.isEmpty()) {</span>
+
+<span class="nc" id="L523">            player.stop();</span>
+<span class="nc" id="L524">            pathTiles.fill(borderTiles, dirtTiles, grassTiles,</span>
+                    concreteTiles, levelEnemies, false);
+        }
+<span class="nc" id="L527">        grassTiles.removeFloatingTiles(borderTiles);</span>
+<span class="nc" id="L528">        pathTiles.propagate(redPathSprite, frameCount);</span>
+<span class="nc" id="L529">    }</span>
+
+    /**
+     * Updates the Player's behaviours per frame, which includes
+     * laying down path, dying, and activating power ups.
+     */
+    private void updatePlayer() {
+
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        for (int i = 0; i &lt; player.getSpeed(); i++) {</span>
+
+<span class="nc" id="L539">            Tile newPath = player.createPath(greenPathSprite);</span>
+
+<span class="nc bnc" id="L541" title="All 2 branches missed.">            if (newPath != null &amp;&amp;</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">                !player.isOverlapping(concreteTiles) &amp;&amp;</span>
+<span class="nc bnc" id="L543" title="All 2 branches missed.">                !player.isOverlapping(borderTiles) &amp;&amp;</span>
+<span class="nc bnc" id="L544" title="All 2 branches missed.">                !player.isOverlapping(grassTiles))</span>
+
+<span class="nc" id="L546">                pathTiles.add(newPath);</span>
+
+<span class="nc" id="L548">            Tile overlappedTile = player.getOverlappedTileFrom(</span>
+                borderTiles, concreteTiles, grassTiles, pathTiles);
+
+<span class="nc" id="L551">            player.updateStatus(overlappedTile);</span>
+
+<span class="nc bnc" id="L553" title="All 2 branches missed.">            if (player.isOverlapping(pathTiles) &amp;&amp;</span>
+<span class="nc bnc" id="L554" title="All 2 branches missed.">                (overlappedTile != pathTiles.get(pathTiles.size() - 1) ||</span>
+<span class="nc bnc" id="L555" title="All 2 branches missed.">                overlappedTile.isRed())) {</span>
+
+<span class="nc" id="L557">                player.respawn();</span>
+<span class="nc" id="L558">                pathTiles.clear();</span>
+<span class="nc" id="L559">                deactivateAllPowerUps();</span>
+<span class="nc" id="L560">                lives--;</span>
+            }
+<span class="nc bnc" id="L562" title="All 2 branches missed.">            if (player.isOverlapping(boost))</span>
+<span class="nc" id="L563">                boost.activateOn(player, overlappedTile, frameCount);</span>
+            
+<span class="nc bnc" id="L565" title="All 2 branches missed.">            if (player.isOverlapping(freeze))</span>
+<span class="nc" id="L566">                levelEnemies.forEach(enemy -&gt;</span>
+<span class="nc" id="L567">                    freeze.activateOn(enemy, overlappedTile, frameCount));</span>
+
+<span class="nc bnc" id="L569" title="All 2 branches missed.">            if (player.isOverlapping(invincible)) {</span>
+<span class="nc" id="L570">                invincible.activateOn(player, overlappedTile, frameCount);</span>
+<span class="nc" id="L571">                levelEnemies.forEach(enemy -&gt;</span>
+<span class="nc" id="L572">                    invincible.activateOn(enemy, overlappedTile, frameCount));</span>
+            }
+<span class="nc bnc" id="L574" title="All 2 branches missed.">            if (player.isOverlapping(shield))</span>
+<span class="nc" id="L575">                shield.activateOn(player, overlappedTile, frameCount);</span>
+            
+<span class="nc" id="L577">            player.move();</span>
+        }
+<span class="nc" id="L579">    }</span>
+
+    /**
+     * Updates all PowerUps' behaviours per frame, which includes
+     * spawning and despawning, activating and deactivating, and
+     * displaying the progress bar.
+     */
+    private void updatePowerUps() {
+
+<span class="nc" id="L588">        PowerUp[] powerUps =</span>
+            new PowerUp[] {boost, freeze, invincible, shield};
+
+<span class="nc" id="L591">        PowerUp mostRecent = null;</span>
+
+<span class="nc bnc" id="L593" title="All 2 branches missed.">        for (PowerUp powerUp : powerUps) {</span>
+
+<span class="nc bnc" id="L595" title="All 2 branches missed.">            if (powerUp.isTimeToSpawn(frameCount))</span>
+<span class="nc" id="L596">                powerUp.spawn(dirtTiles, frameCount);</span>
+
+<span class="nc bnc" id="L598" title="All 2 branches missed.">            if (powerUp.isTimeToDespawn(frameCount))</span>
+<span class="nc" id="L599">                powerUp.despawn(frameCount);</span>
+
+<span class="nc bnc" id="L601" title="All 4 branches missed.">            if (powerUp.isInEffect() &amp;&amp;</span>
+                (mostRecent == null ||
+<span class="nc" id="L603">                powerUp.getStateChangeFrameCount() &gt;</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">                mostRecent.getStateChangeFrameCount())) {</span>
+                
+<span class="nc" id="L606">                mostRecent = powerUp;</span>
+            }
+        }
+<span class="nc bnc" id="L609" title="All 2 branches missed.">        if (mostRecent != null) {</span>
+            
+<span class="nc" id="L611">            int[] rgb = mostRecent.getRGB();</span>
+<span class="nc" id="L612">            int width =</span>
+<span class="nc" id="L613">                (int) mostRecent.getProgressBarWidth(240, frameCount);</span>
+            
+<span class="nc" id="L615">            rectMode(CORNER);</span>
+<span class="nc" id="L616">            fill(100);</span>
+<span class="nc" id="L617">            rect(200, 26, 240, 30, 20);</span>
+
+<span class="nc" id="L619">            rectMode(CORNER);</span>
+<span class="nc" id="L620">            fill(rgb[0], rgb[1], rgb[2]);</span>
+<span class="nc" id="L621">            rect(200, 26, width, 30, 20);</span>
+        }
+<span class="nc bnc" id="L623" title="All 2 branches missed.">        if (boost.isTimeToDeactivate(frameCount))</span>
+<span class="nc" id="L624">            boost.deactivateOn(player);</span>
+
+<span class="nc bnc" id="L626" title="All 2 branches missed.">        if (freeze.isTimeToDeactivate(frameCount))</span>
+<span class="nc" id="L627">            levelEnemies.forEach(freeze::deactivateOn);</span>
+        
+<span class="nc bnc" id="L629" title="All 2 branches missed.">        if (invincible.isTimeToDeactivate(frameCount)) {</span>
+<span class="nc" id="L630">            invincible.deactivateOn(player);</span>
+<span class="nc" id="L631">            levelEnemies.forEach(freeze::deactivateOn);</span>
+        }
+<span class="nc bnc" id="L633" title="All 2 branches missed.">        if (shield.isTimeToDeactivate(frameCount))</span>
+<span class="nc" id="L634">            shield.deactivateOn(player);</span>
+<span class="nc" id="L635">    }</span>
+
+    public static void main(String[] args) {
+<span class="nc" id="L638">        PApplet.main(&quot;lawnlayer.App&quot;);</span>
+<span class="nc" id="L639">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

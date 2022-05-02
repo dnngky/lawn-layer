@@ -20,7 +20,7 @@ public class TileList {
     /**
      * The number of frames per red path propagation.
      */
-    public static final int FPP = 3;
+    private static final int FPP = 3;
 
     private List<Tile> tiles;
     private Name tileName;
@@ -42,8 +42,8 @@ public class TileList {
      * Initialises an empty TileList with the specified tileSprite and
      * tileName of the tiles to be contained inside it.
      * 
-     * @param tileSprite - the PImage sprite of the tiles to be contained
-     * @param tileName - the name of the tiles to be contained
+     * @param tileSprite the PImage sprite of the tiles to be contained
+     * @param tileName the name of the tiles to be contained
      */
     public TileList(PImage tileSprite, Name tileName) {
 
@@ -57,7 +57,7 @@ public class TileList {
      * Initialises a TileList containing the tiles inside the specified
      * Tile array.
      * 
-     * @param tiles - the Tile array of tiles to be added
+     * @param tiles the Tile array of tiles to be added
      */
     public TileList(Tile[] tiles) {
 
@@ -74,7 +74,7 @@ public class TileList {
      * Adds the specified tile into this TileList, if such tile does not
      * already exist.
      * 
-     * @param tile - the tile to be added
+     * @param tile the tile to be added
      * @return true if the tile has been successfully added
      * 
      * @see List#add(Object)
@@ -93,7 +93,7 @@ public class TileList {
      * this TileList. For each tile, if it already exists in this
      * TileList, skips and does not add it.
      * 
-     * @param otherTiles - the TileList of tiles to be added
+     * @param otherTiles the TileList of tiles to be added
      * @return true if all tiles have been successfully added
      * 
      * @see #add(Tile)
@@ -121,7 +121,9 @@ public class TileList {
     }
 
     /**
-     * @param positionTile
+     * Checks if the specified positionTile is contained in this TileList.
+     * 
+     * @param positionTile the Tile to be checked against for containment
      * @return true if this TileList contains the specified positionTile
      * 
      * @see List#contains(Object)
@@ -134,7 +136,7 @@ public class TileList {
     /**
      * Draws the tiles in this TileList.
      * 
-     * @param app - the PApplet instance to be drawn in
+     * @param app the PApplet instance to be drawn in
      * 
      * @see GameObject#draw(PApplet)
      */
@@ -156,16 +158,17 @@ public class TileList {
      * region TileLists, and updates the unfilled tiles by removing
      * tiles that are contained in the region TileLists.
      * 
-     * @param borderTiles - the TileList of grass border tiles
-     * @param fillTiles - the TileList of grass fill tiles
-     * @param concreteTiles - the TileList of concrete tiles
-     * @param enemies - the List of enemies
-     * @param printMsg - toggles fill messages printed in the terminal
+     * @param borderTiles the TileList of grass border tiles
+     * @param unfilledTiles the TileList of unfilled tiles
+     * @param fillTiles the TileList of grass fill tiles
+     * @param concreteTiles the TileList of concrete tiles
+     * @param enemies the List of enemies
+     * @param printMsg toggles fill messages printed in the terminal
      * 
      * @see #convertToFillTiles(TileList)
      * @see #getStartTiles(TileList, TileList)
      * @see #fillRegion(Tile, TileList, TileList, PImage)
-     * @see Enemy#isInsideRegion(TileList)
+     * @see Enemy#isOverlapping(GameObject)
      */
     public void fill(TileList borderTiles, TileList unfilledTiles,
         TileList fillTiles, TileList concreteTiles, List<Enemy> enemies,
@@ -216,7 +219,7 @@ public class TileList {
     /**
      * Retrieves the tile of the specified index in this TileList.
      * 
-     * @param index - the index of the tile to be retrieved
+     * @param index the index of the tile to be retrieved
      * @return the retrieved tile
      * 
      * @see List#get(int)
@@ -230,13 +233,13 @@ public class TileList {
      * Attempts to retrieve the tile in the TileList equals to specified
      * positionTile.
      * 
-     * @param positionTile - the tile to be retrieved
+     * @param positionTile the tile to be retrieved
      * @return the specified tile inside this TileList if such tile exists,
      * null otherwise
      * 
      * @see Tile#equals(Object)
      */
-    private Tile get(Tile positionTile) {
+    public Tile get(Tile positionTile) {
 
         for (Tile tile : tiles) {
 
@@ -287,8 +290,8 @@ public class TileList {
      * last propagation (where n is the FPP), retrieves its
      * adjacent path tiles and turn them red.
      * 
-     * @param redPathSprite - the PImage sprite of the red path
-     * @param frameCount - the current frame
+     * @param redPathSprite the PImage sprite of the red path
+     * @param frameCount the current frame
      * 
      * @see Tile#getAdjacentTiles()
      * @see Tile#isRed()
@@ -320,7 +323,7 @@ public class TileList {
     /**
      * Removes the specified tile from this TileList if such tile exists.
      * 
-     * @param tile - the tile to be removed
+     * @param tile the tile to be removed
      * @return true if the tile has been successfully removed
      * 
      * @see List#remove(Object)
@@ -334,7 +337,7 @@ public class TileList {
      * Removes all of the tiles in the specified otherTiles
      * from this TileList.
      * 
-     * @param otherTiles - the TileList of tiles to be removed
+     * @param otherTiles the TileList of tiles to be removed
      * 
      * @see List#removeAll(java.util.Collection)
      */
@@ -349,7 +352,7 @@ public class TileList {
      * A tile is removed if it is floating around
      * this TileList and the specified otherTiles.
      * 
-     * @param otherTiles - the TileList of tiles to be checked against
+     * @param otherTiles the TileList of tiles to be checked against
      * for floating tiles
      * 
      * @see List#removeIf(java.util.function.Predicate)
@@ -389,8 +392,6 @@ public class TileList {
      * Retrieves the string representation of this TileList.
      * 
      * @return the string representation of this TileList
-     * 
-     * @see List#toString()
      */
     public String toString() {
 
@@ -407,8 +408,8 @@ public class TileList {
      * them into new border tiles. Finally, removes the collidedTile from
      * this TileList.
      * 
-     * @param collidedTile - the border tile which has been collided
-     * @param fillTiles - the TileList of grass fill tiles
+     * @param collidedTile the border tile which has been collided
+     * @param fillTiles the TileList of grass fill tiles
      * 
      * @see Tile#isAdjacentTo(Tile)
      */
@@ -471,10 +472,10 @@ public class TileList {
      * tile found), then there is no region to be filled. Thus,
      * returns an empty TileList.
      * 
-     * @param startTile - the starting tile for filling the region
-     * @param borderTiles - the TileList of grass border tiles
-     * @param concreteTiles - the TileList of concrete tiles
-     * @param fillSprite - the PImage sprite for the filled region tiles
+     * @param startTile the starting tile for filling the region
+     * @param borderTiles the TileList of grass border tiles
+     * @param concreteTiles the TileList of concrete tiles
+     * @param fillSprite the PImage sprite for the filled region tiles
      * @return a TileList of the filled region tiles
      * 
      * @see Tile#getAdjacentTiles()
@@ -515,8 +516,8 @@ public class TileList {
      * If the adjacent tile is clear (i.e., it is not a concrete, path,
      * nor grass border tile), proceeds to set it as the starting tile.
      * 
-     * @param borderTiles - the TileList of grass border tiles
-     * @param concreteTiles - the TileList of concrete tiles
+     * @param borderTiles the TileList of grass border tiles
+     * @param concreteTiles the TileList of concrete tiles
      * @return a TileList of starting tiles for each region
      * 
      * @see Direction#normal()

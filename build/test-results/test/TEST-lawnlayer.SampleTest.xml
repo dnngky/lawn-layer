@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="lawnlayer.SampleTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2022-04-26T07:59:52" hostname="MSI" time="0.025">
+<testsuite name="lawnlayer.SampleTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2022-05-02T02:22:34" hostname="MSI" time="2.127">
   <properties/>
-  <testcase name="simpleTest()" classname="lawnlayer.SampleTest" time="0.025"/>
+  <testcase name="testApp()" classname="lawnlayer.SampleTest" time="1.987"/>
+  <testcase name="testTileListFill()" classname="lawnlayer.SampleTest" time="0.029"/>
+  <testcase name="testBoost()" classname="lawnlayer.SampleTest" time="0.009"/>
+  <testcase name="testEnemy()" classname="lawnlayer.SampleTest" time="0.014"/>
+  <testcase name="testEnums()" classname="lawnlayer.SampleTest" time="0.004"/>
+  <testcase name="testTile()" classname="lawnlayer.SampleTest" time="0.01"/>
+  <testcase name="testTileListBasic()" classname="lawnlayer.SampleTest" time="0.007"/>
+  <testcase name="testInvincible()" classname="lawnlayer.SampleTest" time="0.004"/>
+  <testcase name="testFreeze()" classname="lawnlayer.SampleTest" time="0.004"/>
+  <testcase name="testPlayer()" classname="lawnlayer.SampleTest" time="0.004"/>
+  <testcase name="testShield()" classname="lawnlayer.SampleTest" time="0.009"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

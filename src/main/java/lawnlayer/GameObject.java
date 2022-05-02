@@ -11,7 +11,7 @@ import processing.core.PApplet;
  */
 public abstract class GameObject {
     
-    protected static final int SIZE = Info.SPRITESIZE;
+    public static final int SIZE = 20;
     
     protected Name name;
     protected PImage sprite;
@@ -35,8 +35,8 @@ public abstract class GameObject {
      * xy-coordinates will be randomised within the map bounds (the width
      * and height of the map is pre-defined).
      * 
-     * @param sprite - the PImage sprite of this GameObject
-     * @param name - the name of this GameObject
+     * @param sprite the PImage sprite of this GameObject
+     * @param name the name of this GameObject
      */
     protected GameObject(PImage sprite, Name name) {
         
@@ -49,10 +49,10 @@ public abstract class GameObject {
      * Initialises a GameObject with the specified sprite, xy-coordinates,
      * and name.
      * 
-     * @param sprite - the PImage sprite of this GameObject
-     * @param x - the x-coordinate of this GameObject
-     * @param y - the y-coordinate of this GameObject
-     * @param name - the name of this GameObject
+     * @param sprite the PImage sprite of this GameObject
+     * @param x the x-coordinate of this GameObject
+     * @param y the y-coordinate of this GameObject
+     * @param name the name of this GameObject
      */
     protected GameObject(PImage sprite, int x, int y, Name name) {
 
@@ -67,9 +67,9 @@ public abstract class GameObject {
      * and name. The xy-coordinates of this GameObject will be randomised
      * within the given tile (the size of the tile is pre-defined).
      * 
-     * @param sprite - the PImage sprite of this GameObject
-     * @param location - the tile location of this GameObject
-     * @param name - the name of this GameObject
+     * @param sprite the PImage sprite of this GameObject
+     * @param location the tile location of this GameObject
+     * @param name the name of this GameObject
      */
     protected GameObject(PImage sprite, String location, Name name) {
 
@@ -89,9 +89,20 @@ public abstract class GameObject {
     }
 
     /**
+     * Randomises this GameObject's xy-coordinates within the map bounds
+     * (The width and height of the map is pre-defined).
+     */
+    protected void randomiseXY() {
+
+        x = SIZE + rand.nextInt(Info.WIDTH - 2*SIZE);
+        y = (Info.TOPBAR + SIZE) +
+            rand.nextInt(Info.HEIGHT - (Info.TOPBAR - 2*SIZE));
+    }
+
+    /**
      * Draws this GameObject.
      * 
-     * @param app - the PApplet instance to be drawn in
+     * @param app the PApplet instance to be drawn in
      */
     public void draw(PApplet app) {
 
@@ -159,19 +170,9 @@ public abstract class GameObject {
     }
 
     /**
-     * Randomises this GameObject's xy-coordinates within the map bounds
-     * (The width and height of the map is pre-defined).
-     */
-    protected void randomiseXY() {
-
-        x = SIZE + rand.nextInt(Info.WIDTH - 2*SIZE);
-        y = (Info.TOPBAR + SIZE) + rand.nextInt(Info.HEIGHT - 2*SIZE);
-    }
-
-    /**
      * Sets the name of this GameObject to the specified name.
      * 
-     * @param name - the name to be set
+     * @param name the name to be set
      */
     public void setName(Name name) {
 
@@ -181,7 +182,7 @@ public abstract class GameObject {
     /**
      * Sets the sprite of this GameObject to the specified sprite.
      * 
-     * @param sprite - the PImage sprite to be set
+     * @param sprite the PImage sprite to be set
      */
     public void setSprite(PImage sprite) {
 

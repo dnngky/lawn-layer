@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Direction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">lawnlayer</a> &gt; <a href="index.source.html" class="el_package">lawnlayer</a> &gt; <span class="el_source">Direction.java</span></div><h1>Direction.java</h1><pre class="source lang-java linenums">package lawnlayer;
+
+/**
+ * An enum indicating the direction the Player is moving in,
+ * as well as the orientation of Tiles.
+ */
+<span class="fc" id="L7">public enum Direction {</span>
+
+<span class="fc" id="L9">    UP, DOWN, LEFT, RIGHT, NONE;</span>
+
+    /**
+     * Flips the current direction by 180 degrees.
+     * 
+     * @return the opposite direction.
+     */
+    public Direction flip() {
+
+<span class="pc bpc" id="L18" title="3 of 5 branches missed.">        switch (this) {</span>
+
+            case UP:
+<span class="fc" id="L21">                return DOWN;</span>
+            case DOWN:
+<span class="nc" id="L23">                return UP;</span>
+            case LEFT:
+<span class="fc" id="L25">                return RIGHT;</span>
+            case RIGHT:
+<span class="nc" id="L27">                return LEFT;</span>
+            default:
+<span class="nc" id="L29">                return null;</span>
+        }
+    }
+
+    /**
+     * Flips the current direction by 90 degrees.
+     * 
+     * @return the normal direction
+     */
+    public Direction normal() {
+
+<span class="pc bpc" id="L40" title="3 of 5 branches missed.">        switch (this) {</span>
+
+            case UP:
+<span class="fc" id="L43">                return Direction.RIGHT;</span>
+            case DOWN:
+<span class="fc" id="L45">                return Direction.LEFT;</span>
+            case LEFT:
+<span class="nc" id="L47">                return Direction.UP;</span>
+            case RIGHT:
+<span class="nc" id="L49">                return Direction.DOWN;</span>
+            default:
+<span class="nc" id="L51">                return Direction.NONE;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

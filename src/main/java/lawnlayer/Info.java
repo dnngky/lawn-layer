@@ -24,10 +24,6 @@ public final class Info {
      * The number of frames per second.
      */
     public static final int FPS = 60;
-    /**
-     * The size of a square sprite (pixels).
-     */
-    public static final int SPRITESIZE = 20;
 
     /**
      * An enum containing the pre-defined names of the GameObjects.

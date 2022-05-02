@@ -5,7 +5,7 @@ import processing.core.PApplet;
 import processing.core.PImage;
 
 /**
- * A subclass of GameObject and implementation of PowerUp.
+ * A singleton subclass of GameObject and implementation of PowerUp.
  * This power up increases the Player's speed for a brief
  * period of time.
  */
@@ -26,8 +26,8 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * Initialises the Boost power up with the specified sprite and name.
      * 
-     * @param sprite - the PImage sprite of the boost
-     * @param name - the name of the boost
+     * @param sprite the PImage sprite of the boost
+     * @param name the name of the boost
      */
     private Boost(PImage sprite, Name name) {
 
@@ -43,11 +43,11 @@ public class Boost extends GameObject implements PowerUp {
      * A 'static constructor' for Player. If multiple instantiation of Player
      * is attempted, an exception is thrown.
      * 
-     * @param sprite - the PImage sprite of the Boost
-     * @param name - the name of the boost
+     * @param sprite the PImage sprite of the Boost
+     * @param name the name of the boost
      * @return a single instance of Player
      * 
-     * @see #Boost(PImage, int, int)
+     * @see #Boost(PImage, Name)
      * @throws IllegalStateException if an instance already exists
      */
     public static Boost createBoost(PImage sprite, Name name) {
@@ -73,7 +73,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * Draws the power up.
      * 
-     * @param app - the PApplet instance to be drawn in
+     * @param app the PApplet instance to be drawn in
      * 
      * @see GameObject#draw(PApplet)
      */
@@ -87,6 +87,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#getProgressBarWidth(int, int)
      */
+    @Override
     public double getProgressBarWidth(int barWidth, int frameCount) {
 
         int frameDuration = Info.FPS * EFFECTDURATION;
@@ -99,6 +100,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#getRGB()
      */
+    @Override
     public int[] getRGB() {
 
         return RGB;
@@ -107,6 +109,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#getStateChangeFrameCount()
      */
+    @Override
     public int getStateChangeFrameCount() {
 
         return stateChangeFrameCount;
@@ -115,6 +118,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#isInEffect()
      */
+    @Override
     public boolean isInEffect() {
 
         return inEffect;
@@ -123,6 +127,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#setStartingFrameCount(int)
      */
+    @Override
     public void setStartingFrameCount(int frameCount) {
 
         stateChangeFrameCount = frameCount;
@@ -131,6 +136,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#isTimeToDeactivate(int)
      */
+    @Override
     public boolean isTimeToDeactivate(int frameCount) {
 
         int frameDuration = Info.FPS * EFFECTDURATION;
@@ -141,6 +147,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#isTimeToDespawn(int)
      */
+    @Override
     public boolean isTimeToDespawn(int frameCount) {
 
         int frameDuration = Info.FPS * SPAWNDURATION;
@@ -151,6 +158,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#isTimeToSpawn(int)
      */
+    @Override
     public boolean isTimeToSpawn(int frameCount) {
         
         int frameDelay = Info.FPS * delay;
@@ -161,6 +169,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#spawn(TileList, int)
      */
+    @Override
     public void spawn(TileList unfilledTiles, int frameCount) {
         
         int tileIndex = rand.nextInt(unfilledTiles.size());
@@ -176,6 +185,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#despawn(int)
      */
+    @Override
     public void despawn(int frameCount) {
 
         x = -1;
@@ -189,6 +199,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#activateOn(Entity, Tile, int)
      */
+    @Override
     public void activateOn(Entity entity, Tile overlappedTile,
         int frameCount) {
 
@@ -210,6 +221,7 @@ public class Boost extends GameObject implements PowerUp {
     /**
      * @see PowerUp#deactivateOn(Entity)
      */
+    @Override
     public void deactivateOn(Entity entity) {
 
         if (!(entity instanceof Player))
