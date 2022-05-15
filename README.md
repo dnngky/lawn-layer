@@ -1,6 +1,6 @@
 # LawnLayer
 
-Note: Gradle is required to run the game. Gradle is a build automation tool which can be easily installed at gradle.org. Once Gradle has been installed, download all files and directories as a zip file, and enter 'gradle.run' in the terminal in the extracted root directory.
+Note: Gradle is required to run the game. Gradle is a build automation tool which can be easily installed at gradle.org. Once Gradle has been installed, download all files and directories as a zip file, and enter 'gradle.run' in the terminal in the extracted root directory. After running, the Javadoc for the game can be found in build/docs/javadoc/index.html.
 
 Lawn Layer is a mini-game where the player fills grass tiles and avoids enemies in the process. On each level, the player spawns as a green ball on a large dirt platform, and moves using arrow keys. The player lays down path tiles as they move on the dirt. When a region is enclosed by the path, it turns into a grass region if there are no enemies present. If the player or an enemy hits a path tile before it turns into grass, the path will turn red and propagate outwards and kills the player should it hit them. There are four power-ups which spawn randomly: boost, freeze, shield, and invincible.
 
